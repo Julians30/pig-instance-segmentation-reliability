@@ -1,0 +1,58 @@
+{
+  "experiment": "CERDOS_33_COCO_9_Seeds_v1",
+  "parent_protocol09_sha256": "30add1f1f8340e017d2fbf132ab24a4f32f702db5e2216572bb72c8c57addc95",
+  "parent_protocol23_sha256": "d09a7de6e48872ec33e3321e2932461c43cdf4cd117a80dd358823a4fa8f757b",
+  "ground_truth_sha256": "8baf1fa142ab85b0d0031ce8585afc791e8ccae54de97014f156115521631b00",
+  "test_txt_sha256": "0d31f2b3bc931c6f08c96544df8fdb1f91c3b6bea5da4624917e94da97e01c05",
+  "yaml_sha256": "9a223b47038c661303c1d12a35cbdcb212ed51529c8c773c4c9c66998706d1d9",
+  "manifest_sha256": "27ba2e77c188d360bc5d6cbac2a2e2bf0ec929448ae082e49e583e222ad48cd3",
+  "historical_prediction_sha256": {
+    "('YOLO11n-seg', 2026)": "243de51cd72aac7f716732ecc412d33ba36e137782c8cf49dddbf6c7a238ae89",
+    "('Mask R-CNN', 2026)": "de02d6e7ec86ab867fcf74e0a5234203f42cb8d9fc14f32aab6afa4bd7ddec11",
+    "('YOLO26n-seg', 2026)": "fe29bc8fe1da110b643e08ecbfa12beb00fe7409a3ff975c1ccba5f353ce2657",
+    "('YOLO26n-seg', 2027)": "d52bdcf66c993cfc5a3afc4bafbd7aea4a269cb5990167136ae9c9d528bfb2d8",
+    "('YOLO26n-seg', 2028)": "56f03080cc6e432ec9e53f311702b09f991d4dcdff7df91c1eb41f6833949457"
+  },
+  "checkpoint_sha256": {
+    "YOLO11n-seg | 2026": "781c3bcf3bd4c1511f0eca5fb1a40c26a20a4dc54ae1de65890f33a7015d804a",
+    "YOLO11n-seg | 2027": "3e4d21f87d4d64e3b4a31ff4d6cd492642ff9e0f66aa0a9303029f964945d262",
+    "YOLO11n-seg | 2028": "620e3ab215d287915495c9fc0bb8a139a72d99ea1d4fcc745cd96fcdbfa66eb8",
+    "YOLO26n-seg | 2026": "ca7d45d3ec5226ba5d0193fa1dabe49862c75bc667c7685698e5ef31594e72bb",
+    "YOLO26n-seg | 2027": "a754fe8989cfba5f51d7e2392296e2ca992b0105007c3d37be832c8a0dffca3e",
+    "YOLO26n-seg | 2028": "43ae5a9bf1cf2b20f2fec4b4bd6a99992fd948a7482790a55d5e0e6cdd54c06a",
+    "Mask R-CNN | 2026": "2eeffdf14bdba6550653d05e4b58d7c388e63d68d329ebd415492972f662eb2e",
+    "Mask R-CNN | 2027": "40a9287c045da2328a54ea3d7ef44710cbf9c731b286418a834b9c576a2ae1f9",
+    "Mask R-CNN | 2028": "be5040bd5d62ce78e9c57fe99b407c2df93cf408b7d34c44be6b6a30223cebf9"
+  },
+  "test_images": 373,
+  "test_GT_instances": 4648,
+  "test_dates": 5,
+  "coco_eval": {
+    "iouType": "segm",
+    "maxDets": [
+      1,
+      10,
+      100
+    ],
+    "IoU thresholds": "0.50:0.05:0.95"
+  },
+  "inference": {
+    "YOLO11n-seg": {
+      "imgsz": 640,
+      "conf": 0.001,
+      "iou": 0.7,
+      "max_det": 100,
+      "retina_masks": true
+    },
+    "Mask R-CNN": {
+      "min_size": 512,
+      "max_size": 768,
+      "score_thresh": 0.001,
+      "detections_per_img": 100,
+      "mask_bin_thresh": 0.5
+    }
+  },
+  "selection": "Best checkpoint by validation mask AP; no tuning of thresholds on test.",
+  "analysis_status": "post-hoc descriptive; test examined in earlier experiments",
+  "no_external_validation": true
+}
