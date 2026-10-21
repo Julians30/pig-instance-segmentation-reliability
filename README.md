@@ -35,6 +35,10 @@ The raw images and labels are **not** in this repository. Obtain FaroPigSeg from
 
 The full-precision **nine-run** data, **45 run–date** values, frozen evaluation protocol and checkpoint/prediction SHA-256 records are in [`results/`](results/README.md). Summaries are **recorded outputs**, not evidence of an independent repeat run on GitHub Actions.
 
+## Reviewers: evidence map
+
+Start with the [reviewer quick-start and claim-to-artifact guide](docs/REVIEWER_GUIDE.md), which distinguishes static repository checks from independent COCO recomputation and gives a direct path from the manuscript's claims to the numbered notebooks and artifacts.
+
 ## Navigation
 
 | Folder | Purpose |
