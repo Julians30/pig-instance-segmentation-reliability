@@ -35,6 +35,10 @@ The raw images and labels are **not** in this repository. Obtain FaroPigSeg from
 
 The full-precision **nine-run** data, **45 run–date** values, frozen evaluation protocol and checkpoint/prediction SHA-256 records are in [`results/`](results/README.md). Summaries are **recorded outputs**, not evidence of an independent repeat run on GitHub Actions.
 
+## Independent COCO numerical audit
+
+**Verified on the nine archived prediction JSON files:** a separately authored compressed-RLE mask evaluator recalculated 9 global × 3 metrics and 45 date-level × 3 metrics. All **162** scalar comparisons reproduce Experiment 33 at floating-point precision (maximum absolute difference **3.33 × 10⁻¹⁶**). The exact source, per-date/global records, input SHA-256 fingerprints and instructions are documented in [Independent COCO audit](docs/INDEPENDENT_COCO_AUDIT.md). This is a **separate implementation over the same predictions**, not new training, new model inference or a run of the official `pycocotools` library. The raw predictions/GT are not all hosted in this repository.
+
 ## Reviewers: evidence map
 
 Start with the [reviewer quick-start and claim-to-artifact guide](docs/REVIEWER_GUIDE.md), which distinguishes static repository checks from independent COCO recomputation and gives a direct path from the manuscript's claims to the numbered notebooks and artifacts.
@@ -65,7 +69,7 @@ Start with the [reviewer quick-start and claim-to-artifact guide](docs/REVIEWER_
 
 ## What is independently verified here?
 
-The code publication contains notebook source cells with executed outputs stripped, split files copied byte-for-byte, original small experiment reports, nine-seed summaries and self-checks for counts/date separation/checksums. It does **not** ship model weights, the FaroPigSeg images, ground-truth masks, or a fully containerized end-to-end GPU reproduction. The original Colab notebooks also include environment-specific paths; details and remaining items are maintained in [`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md).
+The code publication contains notebook source cells with executed outputs stripped, split files copied byte-for-byte, original small experiment reports, nine-seed summaries and self-checks for counts/date separation/checksums. It does **not** ship model weights, the FaroPigSeg images, ground-truth masks, or a fully containerized end-to-end GPU reproduction. A separate numerical recomputation of archived masks **has** now been completed and published as summary evidence. The original Colab notebooks also include environment-specific paths; details and remaining items are maintained in [`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md).
 
 ## Code/data availability, citation and licenses
 
