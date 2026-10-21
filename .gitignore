@@ -1,0 +1,25 @@
+# Data are CC BY-NC 4.0 and are not included in this repository.
+/01_Datasets/
+/data/raw/
+/data/extracted/
+/data/derived/
+/outputs/
+/checkpoints/
+/weights/
+/runs/
+**/.ipynb_checkpoints/
+__pycache__/
+*.pyc
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+*.engine
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.log
+.DS_Store

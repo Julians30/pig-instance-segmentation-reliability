@@ -1,0 +1,10 @@
+path: '/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep
+  Learning en Cerdos 🐖/01_Datasets/FaroPigSeg/extraido/FaroPigSeg'
+train: '/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep
+  Learning en Cerdos 🐖/01_Datasets/FaroPigSeg/split_fecha_v1/train.txt'
+val: '/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning
+  en Cerdos 🐖/01_Datasets/FaroPigSeg/split_fecha_v1/val.txt'
+test: '/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep
+  Learning en Cerdos 🐖/01_Datasets/FaroPigSeg/split_fecha_v1/test.txt'
+names:
+  0: cerdo
