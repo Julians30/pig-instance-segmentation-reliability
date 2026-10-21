@@ -1,0 +1,150 @@
+{
+  "status": "PASS",
+  "implementation": "independent compressed RLE IoU + score-ordered COCO AP interpolation in NumPy, separate from historical experimental notebooks",
+  "is_official_pycocotools_run": false,
+  "num_models": 3,
+  "num_training_seeds_each": 3,
+  "num_global_runs": 9,
+  "num_date_rows": 45,
+  "checked_global_metrics": 27,
+  "checked_date_metrics": 135,
+  "total_metric_comparisons": 162,
+  "max_absolute_delta": 3.3306690738754696e-16,
+  "gt_sha256": "8baf1fa142ab85b0d0031ce8585afc791e8ccae54de97014f156115521631b00",
+  "recorded_report_sha256": "c8a7946b09831669cc5a72e3b9647fc5bfb6745c2c9208c518de03441bcf97e0",
+  "run_inputs": [
+    {
+      "Model": "Mask R-CNN",
+      "Seed": 2026,
+      "AP50_95": 0.7961533799791782,
+      "AP50": 0.9191597949660723,
+      "AP75": 0.8811568951372533,
+      "delta_from_recorded": {
+        "AP50_95": 0.0,
+        "AP50": 0.0,
+        "AP75": 0.0
+      },
+      "num_predictions": 9795,
+      "input_sha256": "de02d6e7ec86ab867fcf74e0a5234203f42cb8d9fc14f32aab6afa4bd7ddec11"
+    },
+    {
+      "Model": "Mask R-CNN",
+      "Seed": 2027,
+      "AP50_95": 0.7976146859094956,
+      "AP50": 0.9093230755840387,
+      "AP75": 0.8760327129759484,
+      "delta_from_recorded": {
+        "AP50_95": -1.1102230246251565e-16,
+        "AP50": 0.0,
+        "AP75": 0.0
+      },
+      "num_predictions": 8939,
+      "input_sha256": "743c340088adddebc09a48c377340973575ebdffb3e717d431e3cbab04ef96c5"
+    },
+    {
+      "Model": "Mask R-CNN",
+      "Seed": 2028,
+      "AP50_95": 0.7904348727539234,
+      "AP50": 0.9031904992756513,
+      "AP75": 0.868510187176516,
+      "delta_from_recorded": {
+        "AP50_95": 0.0,
+        "AP50": 0.0,
+        "AP75": 0.0
+      },
+      "num_predictions": 7179,
+      "input_sha256": "2c1473542f4ced94c34d3f0960e3e8f73ea9e5377737d0a2c00b65a5c3039efd"
+    },
+    {
+      "Model": "YOLO11n-seg",
+      "Seed": 2026,
+      "AP50_95": 0.865452748599813,
+      "AP50": 0.9279655709739957,
+      "AP75": 0.9237904589228746,
+      "delta_from_recorded": {
+        "AP50_95": -1.1102230246251565e-16,
+        "AP50": 0.0,
+        "AP75": 0.0
+      },
+      "num_predictions": 15968,
+      "input_sha256": "243de51cd72aac7f716732ecc412d33ba36e137782c8cf49dddbf6c7a238ae89"
+    },
+    {
+      "Model": "YOLO11n-seg",
+      "Seed": 2027,
+      "AP50_95": 0.8609896643860889,
+      "AP50": 0.9247657826669304,
+      "AP75": 0.9195469450906507,
+      "delta_from_recorded": {
+        "AP50_95": -1.1102230246251565e-16,
+        "AP50": 0.0,
+        "AP75": 0.0
+      },
+      "num_predictions": 14929,
+      "input_sha256": "345009176082f981ff435c8fda27a6fe1fc62a9ff0a6215adc3e20a6649241aa"
+    },
+    {
+      "Model": "YOLO11n-seg",
+      "Seed": 2028,
+      "AP50_95": 0.8634661740862553,
+      "AP50": 0.9268560938712243,
+      "AP75": 0.9230649435344123,
+      "delta_from_recorded": {
+        "AP50_95": 0.0,
+        "AP50": 0.0,
+        "AP75": 0.0
+      },
+      "num_predictions": 14623,
+      "input_sha256": "e580c1373daba9607788adcf7985403a3d20ace2e9381243825b86d1cffdd611"
+    },
+    {
+      "Model": "YOLO26n-seg",
+      "Seed": 2026,
+      "AP50_95": 0.8495084015100671,
+      "AP50": 0.9151241133138074,
+      "AP75": 0.9083810945623971,
+      "delta_from_recorded": {
+        "AP50_95": 0.0,
+        "AP50": 0.0,
+        "AP75": 0.0
+      },
+      "num_predictions": 19335,
+      "input_sha256": "fe29bc8fe1da110b643e08ecbfa12beb00fe7409a3ff975c1ccba5f353ce2657"
+    },
+    {
+      "Model": "YOLO26n-seg",
+      "Seed": 2027,
+      "AP50_95": 0.8500288169872062,
+      "AP50": 0.9153319661337542,
+      "AP75": 0.9081271566139688,
+      "delta_from_recorded": {
+        "AP50_95": -1.1102230246251565e-16,
+        "AP50": 0.0,
+        "AP75": 0.0
+      },
+      "num_predictions": 21144,
+      "input_sha256": "d52bdcf66c993cfc5a3afc4bafbd7aea4a269cb5990167136ae9c9d528bfb2d8"
+    },
+    {
+      "Model": "YOLO26n-seg",
+      "Seed": 2028,
+      "AP50_95": 0.8425424589768774,
+      "AP50": 0.9145301643713473,
+      "AP75": 0.9065147276962574,
+      "delta_from_recorded": {
+        "AP50_95": 0.0,
+        "AP50": 0.0,
+        "AP75": 0.0
+      },
+      "num_predictions": 24122,
+      "input_sha256": "56f03080cc6e432ec9e53f311702b09f991d4dcdff7df91c1eb41f6833949457"
+    }
+  ],
+  "dates": [
+    "2023-05-24",
+    "2023-08-21",
+    "2023-08-25",
+    "2023-08-29",
+    "2023-08-31"
+  ]
+}
