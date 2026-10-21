@@ -1,0 +1,38 @@
+name: Independent COCO code self-test (synthetic data)
+on:
+  push:
+    paths:
+      - 'scripts/recompute_coco_masks_independent.py'
+      - 'results/reports/INDEPENDENT_COCO_AUDIT_RESULT.json'
+      - '.github/workflows/coco-independent-selftest.yml'
+  pull_request:
+  workflow_dispatch:
+jobs:
+  synthetic-self-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install isolated evaluation dependency
+        run: python -m pip install 'numpy>=1.24'
+      - name: Validate independent evaluator syntax
+        run: python -m py_compile scripts/recompute_coco_masks_independent.py
+      - name: Exercise exact RLE intersection and AP on synthetic data
+        run: python scripts/recompute_coco_masks_independent.py --self-test
+      - name: Audit published result metadata (not full COCO recomputation)
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('results/reports/INDEPENDENT_COCO_AUDIT_RESULT.json')
+          report=json.loads(p.read_text(encoding='utf-8'))
+          assert report['status']=='PASS'
+          assert report['num_global_runs']==9
+          assert report['num_date_rows']==45
+          assert report['total_metric_comparisons']==162
+          assert report['max_absolute_delta']<1e-12
+          assert len(report['run_inputs'])==9
+          print('PASS: published audit metadata consistent (no raw dataset accessed)')
+          PY
