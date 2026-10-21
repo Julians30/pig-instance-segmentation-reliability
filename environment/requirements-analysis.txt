@@ -1,0 +1,13 @@
+# Optional analytical dependencies for Python/Colab. GPU torch must be installed separately.
+numpy
+pandas
+scipy
+scikit-learn
+matplotlib
+seaborn
+opencv-python-headless
+Pillow
+openpyxl
+pyyaml
+pycocotools
+ultralytics==8.4.182
