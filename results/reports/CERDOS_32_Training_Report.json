@@ -1,0 +1,35 @@
+{
+  "experiment": 32,
+  "created_utc": "2026-10-20T17:14:12.552585+00:00",
+  "status": "completed",
+  "summary": [
+    {
+      "seed": 2026,
+      "status": "original",
+      "best_epoch": 8,
+      "best_validation_mask_AP": 0.8094918475928647,
+      "epochs_recorded": 12,
+      "best_weights_sha256": "2eeffdf14bdba6550653d05e4b58d7c388e63d68d329ebd415492972f662eb2e",
+      "best_weights": "/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖/03_Resultados/06_Entrenamiento/MaskRCNN_fecha_v1/maskrcnn_best_model.pt"
+    },
+    {
+      "seed": 2027,
+      "status": "new",
+      "best_epoch": 8,
+      "best_validation_mask_AP": 0.8147680183120379,
+      "epochs_recorded": 12,
+      "best_weights_sha256": "40a9287c045da2328a54ea3d7ef44710cbf9c731b286418a834b9c576a2ae1f9",
+      "best_weights": "/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖/03_Resultados/06_Entrenamiento/MaskRCNN_multisemilla_v1/seed_2027/maskrcnn_best_model.pt"
+    },
+    {
+      "seed": 2028,
+      "status": "new",
+      "best_epoch": 8,
+      "best_validation_mask_AP": 0.8136901073774675,
+      "epochs_recorded": 12,
+      "best_weights_sha256": "be5040bd5d62ce78e9c57fe99b407c2df93cf408b7d34c44be6b6a30223cebf9",
+      "best_weights": "/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖/03_Resultados/06_Entrenamiento/MaskRCNN_multisemilla_v1/seed_2028/maskrcnn_best_model.pt"
+    }
+  ],
+  "no_test_model_selection": true
+}

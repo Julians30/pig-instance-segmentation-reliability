@@ -1,0 +1,37 @@
+{
+  "experiment": 31,
+  "training_model": "yolo11n-seg.pt",
+  "original_seed": 2026,
+  "new_seeds": [
+    2027,
+    2028
+  ],
+  "recipe": {
+    "model": "yolo11n-seg.pt",
+    "epochs": 60,
+    "imgsz": 640,
+    "batch": 8,
+    "patience": 15,
+    "workers": 2,
+    "deterministic": true,
+    "optimizer": "auto",
+    "amp": true,
+    "close_mosaic": 10,
+    "save_period": 10,
+    "ultralytics": "8.4.182",
+    "frozen_split": {
+      "yaml_sha256": "9a223b47038c661303c1d12a35cbdcb212ed51529c8c773c4c9c66998706d1d9",
+      "manifest_sha256": "27ba2e77c188d360bc5d6cbac2a2e2bf0ec929448ae082e49e583e222ad48cd3",
+      "train_txt_sha256": "17b343f693a62714ebe0d1629b30ec8daff9c7081a1f4234f90ab11107921281",
+      "val_txt_sha256": "6368e3c82d001e33035cdb46ea6c7882ad599d22a06d885a22d8177549619e9d",
+      "test_txt_sha256": "0d31f2b3bc931c6f08c96544df8fdb1f91c3b6bea5da4624917e94da97e01c05"
+    }
+  },
+  "original_weights": "/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖/03_Resultados/06_Entrenamiento/YOLO11n_fecha_v1/weights/best.pt",
+  "original_sha256": "781c3bcf3bd4c1511f0eca5fb1a40c26a20a4dc54ae1de65890f33a7015d804a",
+  "device": "NVIDIA L4",
+  "torch": "2.11.0+cu130",
+  "python": "3.13.15",
+  "no_test_model_selection": true,
+  "limitations": "Does not equalize the YOLO and Mask R-CNN training budgets."
+}

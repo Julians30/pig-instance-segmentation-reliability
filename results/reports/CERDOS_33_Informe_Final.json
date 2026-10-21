@@ -1,0 +1,732 @@
+{
+  "experiment": 33,
+  "created_utc": "2026-10-20T19:29:46.658891+00:00",
+  "journal_target": "Smart Agricultural Technology (Elsevier)",
+  "analysis": "Harmonized COCO instance mask AP over nine existing trained checkpoints",
+  "protocol": {
+    "experiment": "CERDOS_33_COCO_9_Seeds_v1",
+    "parent_protocol09_sha256": "30add1f1f8340e017d2fbf132ab24a4f32f702db5e2216572bb72c8c57addc95",
+    "parent_protocol23_sha256": "d09a7de6e48872ec33e3321e2932461c43cdf4cd117a80dd358823a4fa8f757b",
+    "ground_truth_sha256": "8baf1fa142ab85b0d0031ce8585afc791e8ccae54de97014f156115521631b00",
+    "test_txt_sha256": "0d31f2b3bc931c6f08c96544df8fdb1f91c3b6bea5da4624917e94da97e01c05",
+    "yaml_sha256": "9a223b47038c661303c1d12a35cbdcb212ed51529c8c773c4c9c66998706d1d9",
+    "manifest_sha256": "27ba2e77c188d360bc5d6cbac2a2e2bf0ec929448ae082e49e583e222ad48cd3",
+    "historical_prediction_sha256": {
+      "('YOLO11n-seg', 2026)": "243de51cd72aac7f716732ecc412d33ba36e137782c8cf49dddbf6c7a238ae89",
+      "('Mask R-CNN', 2026)": "de02d6e7ec86ab867fcf74e0a5234203f42cb8d9fc14f32aab6afa4bd7ddec11",
+      "('YOLO26n-seg', 2026)": "fe29bc8fe1da110b643e08ecbfa12beb00fe7409a3ff975c1ccba5f353ce2657",
+      "('YOLO26n-seg', 2027)": "d52bdcf66c993cfc5a3afc4bafbd7aea4a269cb5990167136ae9c9d528bfb2d8",
+      "('YOLO26n-seg', 2028)": "56f03080cc6e432ec9e53f311702b09f991d4dcdff7df91c1eb41f6833949457"
+    },
+    "checkpoint_sha256": {
+      "YOLO11n-seg | 2026": "781c3bcf3bd4c1511f0eca5fb1a40c26a20a4dc54ae1de65890f33a7015d804a",
+      "YOLO11n-seg | 2027": "3e4d21f87d4d64e3b4a31ff4d6cd492642ff9e0f66aa0a9303029f964945d262",
+      "YOLO11n-seg | 2028": "620e3ab215d287915495c9fc0bb8a139a72d99ea1d4fcc745cd96fcdbfa66eb8",
+      "YOLO26n-seg | 2026": "ca7d45d3ec5226ba5d0193fa1dabe49862c75bc667c7685698e5ef31594e72bb",
+      "YOLO26n-seg | 2027": "a754fe8989cfba5f51d7e2392296e2ca992b0105007c3d37be832c8a0dffca3e",
+      "YOLO26n-seg | 2028": "43ae5a9bf1cf2b20f2fec4b4bd6a99992fd948a7482790a55d5e0e6cdd54c06a",
+      "Mask R-CNN | 2026": "2eeffdf14bdba6550653d05e4b58d7c388e63d68d329ebd415492972f662eb2e",
+      "Mask R-CNN | 2027": "40a9287c045da2328a54ea3d7ef44710cbf9c731b286418a834b9c576a2ae1f9",
+      "Mask R-CNN | 2028": "be5040bd5d62ce78e9c57fe99b407c2df93cf408b7d34c44be6b6a30223cebf9"
+    },
+    "test_images": 373,
+    "test_GT_instances": 4648,
+    "test_dates": 5,
+    "coco_eval": {
+      "iouType": "segm",
+      "maxDets": [
+        1,
+        10,
+        100
+      ],
+      "IoU thresholds": "0.50:0.05:0.95"
+    },
+    "inference": {
+      "YOLO11n-seg": {
+        "imgsz": 640,
+        "conf": 0.001,
+        "iou": 0.7,
+        "max_det": 100,
+        "retina_masks": true
+      },
+      "Mask R-CNN": {
+        "min_size": 512,
+        "max_size": 768,
+        "score_thresh": 0.001,
+        "detections_per_img": 100,
+        "mask_bin_thresh": 0.5
+      }
+    },
+    "selection": "Best checkpoint by validation mask AP; no tuning of thresholds on test.",
+    "analysis_status": "post-hoc descriptive; test examined in earlier experiments",
+    "no_external_validation": true
+  },
+  "protocol_sha256": "e984f4bcd049f088a9a61a8535ffbaa88cd3fcb5ff1695a68cbf3d86dc65a3f1",
+  "software": {
+    "python": "3.13.15",
+    "torch": "2.11.0+cu130",
+    "torchvision": "0.26.0+cu130",
+    "ultralytics": "8.4.182",
+    "gpu": "NVIDIA L4"
+  },
+  "global": [
+    {
+      "Model": "YOLO11n-seg",
+      "Seed": 2026,
+      "Images": 373,
+      "GT_instances": 4648,
+      "Predicted_instances": 15968,
+      "Mask_AP50_95": 0.8654527485998131,
+      "Mask_AP50": 0.9279655709739957,
+      "Mask_AP75": 0.9237904589228746
+    },
+    {
+      "Model": "YOLO11n-seg",
+      "Seed": 2027,
+      "Images": 373,
+      "GT_instances": 4648,
+      "Predicted_instances": 14929,
+      "Mask_AP50_95": 0.860989664386089,
+      "Mask_AP50": 0.9247657826669304,
+      "Mask_AP75": 0.9195469450906507
+    },
+    {
+      "Model": "YOLO11n-seg",
+      "Seed": 2028,
+      "Images": 373,
+      "GT_instances": 4648,
+      "Predicted_instances": 14623,
+      "Mask_AP50_95": 0.8634661740862553,
+      "Mask_AP50": 0.9268560938712243,
+      "Mask_AP75": 0.9230649435344123
+    },
+    {
+      "Model": "YOLO26n-seg",
+      "Seed": 2026,
+      "Images": 373,
+      "GT_instances": 4648,
+      "Predicted_instances": 19335,
+      "Mask_AP50_95": 0.8495084015100671,
+      "Mask_AP50": 0.9151241133138074,
+      "Mask_AP75": 0.9083810945623971
+    },
+    {
+      "Model": "YOLO26n-seg",
+      "Seed": 2027,
+      "Images": 373,
+      "GT_instances": 4648,
+      "Predicted_instances": 21144,
+      "Mask_AP50_95": 0.8500288169872063,
+      "Mask_AP50": 0.9153319661337542,
+      "Mask_AP75": 0.9081271566139688
+    },
+    {
+      "Model": "YOLO26n-seg",
+      "Seed": 2028,
+      "Images": 373,
+      "GT_instances": 4648,
+      "Predicted_instances": 24122,
+      "Mask_AP50_95": 0.8425424589768774,
+      "Mask_AP50": 0.9145301643713473,
+      "Mask_AP75": 0.9065147276962574
+    },
+    {
+      "Model": "Mask R-CNN",
+      "Seed": 2026,
+      "Images": 373,
+      "GT_instances": 4648,
+      "Predicted_instances": 9795,
+      "Mask_AP50_95": 0.7961533799791782,
+      "Mask_AP50": 0.9191597949660723,
+      "Mask_AP75": 0.8811568951372533
+    },
+    {
+      "Model": "Mask R-CNN",
+      "Seed": 2027,
+      "Images": 373,
+      "GT_instances": 4648,
+      "Predicted_instances": 8939,
+      "Mask_AP50_95": 0.7976146859094957,
+      "Mask_AP50": 0.9093230755840387,
+      "Mask_AP75": 0.8760327129759484
+    },
+    {
+      "Model": "Mask R-CNN",
+      "Seed": 2028,
+      "Images": 373,
+      "GT_instances": 4648,
+      "Predicted_instances": 7179,
+      "Mask_AP50_95": 0.7904348727539234,
+      "Mask_AP50": 0.9031904992756513,
+      "Mask_AP75": 0.868510187176516
+    }
+  ],
+  "per_date": [
+    {
+      "Model": "YOLO11n-seg",
+      "Seed": 2026,
+      "Date": "2023-05-24",
+      "Images": 84,
+      "Mask_AP50_95": 0.9052894665326547,
+      "Mask_AP50": 0.9419917574552199,
+      "Mask_AP75": 0.9405207734880472
+    },
+    {
+      "Model": "YOLO11n-seg",
+      "Seed": 2026,
+      "Date": "2023-08-21",
+      "Images": 105,
+      "Mask_AP50_95": 0.8626786670771008,
+      "Mask_AP50": 0.9290817188870639,
+      "Mask_AP75": 0.9201257066858037
+    },
+    {
+      "Model": "YOLO11n-seg",
+      "Seed": 2026,
+      "Date": "2023-08-25",
+      "Images": 60,
+      "Mask_AP50_95": 0.846008998991658,
+      "Mask_AP50": 0.9220283956587745,
+      "Mask_AP75": 0.9141630158631049
+    },
+    {
+      "Model": "YOLO11n-seg",
+      "Seed": 2026,
+      "Date": "2023-08-29",
+      "Images": 57,
+      "Mask_AP50_95": 0.8481960905632006,
+      "Mask_AP50": 0.9172685813272806,
+      "Mask_AP75": 0.9070282352053092
+    },
+    {
+      "Model": "YOLO11n-seg",
+      "Seed": 2026,
+      "Date": "2023-08-31",
+      "Images": 67,
+      "Mask_AP50_95": 0.8829520331908126,
+      "Mask_AP50": 0.9513867904314617,
+      "Mask_AP75": 0.9422222150723237
+    },
+    {
+      "Model": "YOLO11n-seg",
+      "Seed": 2027,
+      "Date": "2023-05-24",
+      "Images": 84,
+      "Mask_AP50_95": 0.9086958992138163,
+      "Mask_AP50": 0.94352626852054,
+      "Mask_AP75": 0.9414280526150145
+    },
+    {
+      "Model": "YOLO11n-seg",
+      "Seed": 2027,
+      "Date": "2023-08-21",
+      "Images": 105,
+      "Mask_AP50_95": 0.8567496742090874,
+      "Mask_AP50": 0.9248187329126446,
+      "Mask_AP75": 0.9157118062918044
+    },
+    {
+      "Model": "YOLO11n-seg",
+      "Seed": 2027,
+      "Date": "2023-08-25",
+      "Images": 60,
+      "Mask_AP50_95": 0.844713903973183,
+      "Mask_AP50": 0.9226825176625291,
+      "Mask_AP75": 0.9127890634791549
+    },
+    {
+      "Model": "YOLO11n-seg",
+      "Seed": 2027,
+      "Date": "2023-08-29",
+      "Images": 57,
+      "Mask_AP50_95": 0.8513880946001479,
+      "Mask_AP50": 0.9232502911894193,
+      "Mask_AP75": 0.9057653295873467
+    },
+    {
+      "Model": "YOLO11n-seg",
+      "Seed": 2027,
+      "Date": "2023-08-31",
+      "Images": 67,
+      "Mask_AP50_95": 0.869160970981662,
+      "Mask_AP50": 0.9389487533000727,
+      "Mask_AP75": 0.927593744986775
+    },
+    {
+      "Model": "YOLO11n-seg",
+      "Seed": 2028,
+      "Date": "2023-05-24",
+      "Images": 84,
+      "Mask_AP50_95": 0.9103929652315979,
+      "Mask_AP50": 0.9473867716954187,
+      "Mask_AP75": 0.946835645957868
+    },
+    {
+      "Model": "YOLO11n-seg",
+      "Seed": 2028,
+      "Date": "2023-08-21",
+      "Images": 105,
+      "Mask_AP50_95": 0.8546668160149259,
+      "Mask_AP50": 0.9217032165848811,
+      "Mask_AP75": 0.9125767295954889
+    },
+    {
+      "Model": "YOLO11n-seg",
+      "Seed": 2028,
+      "Date": "2023-08-25",
+      "Images": 60,
+      "Mask_AP50_95": 0.8495945939405719,
+      "Mask_AP50": 0.9286402702677188,
+      "Mask_AP75": 0.9210937432434525
+    },
+    {
+      "Model": "YOLO11n-seg",
+      "Seed": 2028,
+      "Date": "2023-08-29",
+      "Images": 57,
+      "Mask_AP50_95": 0.8558834995251219,
+      "Mask_AP50": 0.9239639339666127,
+      "Mask_AP75": 0.9136581491036221
+    },
+    {
+      "Model": "YOLO11n-seg",
+      "Seed": 2028,
+      "Date": "2023-08-31",
+      "Images": 67,
+      "Mask_AP50_95": 0.8749101708750918,
+      "Mask_AP50": 0.9462363655723938,
+      "Mask_AP75": 0.9367764672406744
+    },
+    {
+      "Model": "YOLO26n-seg",
+      "Seed": 2026,
+      "Date": "2023-05-24",
+      "Images": 84,
+      "Mask_AP50_95": 0.8962880605429439,
+      "Mask_AP50": 0.9387526758270832,
+      "Mask_AP75": 0.9347962918538913
+    },
+    {
+      "Model": "YOLO26n-seg",
+      "Seed": 2026,
+      "Date": "2023-08-21",
+      "Images": 105,
+      "Mask_AP50_95": 0.8430960567147661,
+      "Mask_AP50": 0.9163577966274136,
+      "Mask_AP75": 0.9060004349444039
+    },
+    {
+      "Model": "YOLO26n-seg",
+      "Seed": 2026,
+      "Date": "2023-08-25",
+      "Images": 60,
+      "Mask_AP50_95": 0.8378992858726964,
+      "Mask_AP50": 0.9148083991885907,
+      "Mask_AP75": 0.9059665959616244
+    },
+    {
+      "Model": "YOLO26n-seg",
+      "Seed": 2026,
+      "Date": "2023-08-29",
+      "Images": 57,
+      "Mask_AP50_95": 0.8364130555809948,
+      "Mask_AP50": 0.9021848195962451,
+      "Mask_AP75": 0.8904382985086897
+    },
+    {
+      "Model": "YOLO26n-seg",
+      "Seed": 2026,
+      "Date": "2023-08-31",
+      "Images": 67,
+      "Mask_AP50_95": 0.8621844769887108,
+      "Mask_AP50": 0.9311051064061524,
+      "Mask_AP75": 0.9218003861073468
+    },
+    {
+      "Model": "YOLO26n-seg",
+      "Seed": 2027,
+      "Date": "2023-05-24",
+      "Images": 84,
+      "Mask_AP50_95": 0.9004980133306552,
+      "Mask_AP50": 0.9434852090297877,
+      "Mask_AP75": 0.9410714571816915
+    },
+    {
+      "Model": "YOLO26n-seg",
+      "Seed": 2027,
+      "Date": "2023-08-21",
+      "Images": 105,
+      "Mask_AP50_95": 0.8469724944844806,
+      "Mask_AP50": 0.915334696524243,
+      "Mask_AP75": 0.9052333606404255
+    },
+    {
+      "Model": "YOLO26n-seg",
+      "Seed": 2027,
+      "Date": "2023-08-25",
+      "Images": 60,
+      "Mask_AP50_95": 0.8311590639629275,
+      "Mask_AP50": 0.9115693533472752,
+      "Mask_AP75": 0.8965008383356743
+    },
+    {
+      "Model": "YOLO26n-seg",
+      "Seed": 2027,
+      "Date": "2023-08-29",
+      "Images": 57,
+      "Mask_AP50_95": 0.831286284630538,
+      "Mask_AP50": 0.900173237766712,
+      "Mask_AP75": 0.891339768423799
+    },
+    {
+      "Model": "YOLO26n-seg",
+      "Seed": 2027,
+      "Date": "2023-08-31",
+      "Images": 67,
+      "Mask_AP50_95": 0.8590465449577965,
+      "Mask_AP50": 0.9285132101751667,
+      "Mask_AP75": 0.922225101670607
+    },
+    {
+      "Model": "YOLO26n-seg",
+      "Seed": 2028,
+      "Date": "2023-05-24",
+      "Images": 84,
+      "Mask_AP50_95": 0.8947389399863025,
+      "Mask_AP50": 0.9470313536255387,
+      "Mask_AP75": 0.943104314449142
+    },
+    {
+      "Model": "YOLO26n-seg",
+      "Seed": 2028,
+      "Date": "2023-08-21",
+      "Images": 105,
+      "Mask_AP50_95": 0.8437112811510469,
+      "Mask_AP50": 0.9169680538470406,
+      "Mask_AP75": 0.9068536252185737
+    },
+    {
+      "Model": "YOLO26n-seg",
+      "Seed": 2028,
+      "Date": "2023-08-25",
+      "Images": 60,
+      "Mask_AP50_95": 0.8256467006230359,
+      "Mask_AP50": 0.9097192401002578,
+      "Mask_AP75": 0.9019856704631694
+    },
+    {
+      "Model": "YOLO26n-seg",
+      "Seed": 2028,
+      "Date": "2023-08-29",
+      "Images": 57,
+      "Mask_AP50_95": 0.8222335689863136,
+      "Mask_AP50": 0.9023000721232093,
+      "Mask_AP75": 0.8842276388393753
+    },
+    {
+      "Model": "YOLO26n-seg",
+      "Seed": 2028,
+      "Date": "2023-08-31",
+      "Images": 67,
+      "Mask_AP50_95": 0.8536993957711467,
+      "Mask_AP50": 0.9266557872859791,
+      "Mask_AP75": 0.9185181437808901
+    },
+    {
+      "Model": "Mask R-CNN",
+      "Seed": 2026,
+      "Date": "2023-05-24",
+      "Images": 84,
+      "Mask_AP50_95": 0.797503751555764,
+      "Mask_AP50": 0.910542913639449,
+      "Mask_AP75": 0.8789763211363603
+    },
+    {
+      "Model": "Mask R-CNN",
+      "Seed": 2026,
+      "Date": "2023-08-21",
+      "Images": 105,
+      "Mask_AP50_95": 0.8023419240065466,
+      "Mask_AP50": 0.9235194442108832,
+      "Mask_AP75": 0.8946388309456134
+    },
+    {
+      "Model": "Mask R-CNN",
+      "Seed": 2026,
+      "Date": "2023-08-25",
+      "Images": 60,
+      "Mask_AP50_95": 0.7872334073278872,
+      "Mask_AP50": 0.9221868750166913,
+      "Mask_AP75": 0.8807175686897993
+    },
+    {
+      "Model": "Mask R-CNN",
+      "Seed": 2026,
+      "Date": "2023-08-29",
+      "Images": 57,
+      "Mask_AP50_95": 0.80564162963092,
+      "Mask_AP50": 0.9211469379630112,
+      "Mask_AP75": 0.8832889727509032
+    },
+    {
+      "Model": "Mask R-CNN",
+      "Seed": 2026,
+      "Date": "2023-08-31",
+      "Images": 67,
+      "Mask_AP50_95": 0.8021764973102217,
+      "Mask_AP50": 0.9257715713722504,
+      "Mask_AP75": 0.8891902610809121
+    },
+    {
+      "Model": "Mask R-CNN",
+      "Seed": 2027,
+      "Date": "2023-05-24",
+      "Images": 84,
+      "Mask_AP50_95": 0.8160102301889786,
+      "Mask_AP50": 0.9205831541695816,
+      "Mask_AP75": 0.8975689173751571
+    },
+    {
+      "Model": "Mask R-CNN",
+      "Seed": 2027,
+      "Date": "2023-08-21",
+      "Images": 105,
+      "Mask_AP50_95": 0.8004404547984348,
+      "Mask_AP50": 0.9112399748039876,
+      "Mask_AP75": 0.8806981753334643
+    },
+    {
+      "Model": "Mask R-CNN",
+      "Seed": 2027,
+      "Date": "2023-08-25",
+      "Images": 60,
+      "Mask_AP50_95": 0.7829092543265657,
+      "Mask_AP50": 0.9076371347667734,
+      "Mask_AP75": 0.8725327564511755
+    },
+    {
+      "Model": "Mask R-CNN",
+      "Seed": 2027,
+      "Date": "2023-08-29",
+      "Images": 57,
+      "Mask_AP50_95": 0.7976934903240538,
+      "Mask_AP50": 0.9041985320389035,
+      "Mask_AP75": 0.8791897300020874
+    },
+    {
+      "Model": "Mask R-CNN",
+      "Seed": 2027,
+      "Date": "2023-08-31",
+      "Images": 67,
+      "Mask_AP50_95": 0.8103236544435588,
+      "Mask_AP50": 0.9320513447992365,
+      "Mask_AP75": 0.886303037040202
+    },
+    {
+      "Model": "Mask R-CNN",
+      "Seed": 2028,
+      "Date": "2023-05-24",
+      "Images": 84,
+      "Mask_AP50_95": 0.7699420407925656,
+      "Mask_AP50": 0.8825869639477655,
+      "Mask_AP75": 0.8454567014399279
+    },
+    {
+      "Model": "Mask R-CNN",
+      "Seed": 2028,
+      "Date": "2023-08-21",
+      "Images": 105,
+      "Mask_AP50_95": 0.8039055430269366,
+      "Mask_AP50": 0.9057090517502007,
+      "Mask_AP75": 0.875035580981685
+    },
+    {
+      "Model": "Mask R-CNN",
+      "Seed": 2028,
+      "Date": "2023-08-25",
+      "Images": 60,
+      "Mask_AP50_95": 0.7763944852370237,
+      "Mask_AP50": 0.9027186712130488,
+      "Mask_AP75": 0.8578568713720354
+    },
+    {
+      "Model": "Mask R-CNN",
+      "Seed": 2028,
+      "Date": "2023-08-29",
+      "Images": 57,
+      "Mask_AP50_95": 0.8146106399920454,
+      "Mask_AP50": 0.9214860834837686,
+      "Mask_AP75": 0.8899103916905685
+    },
+    {
+      "Model": "Mask R-CNN",
+      "Seed": 2028,
+      "Date": "2023-08-31",
+      "Images": 67,
+      "Mask_AP50_95": 0.7991771467293064,
+      "Mask_AP50": 0.9097434725179837,
+      "Mask_AP75": 0.8722614342239865
+    }
+  ],
+  "seed_summary": [
+    {
+      "Model": "YOLO11n-seg",
+      "Seeds": 3,
+      "Mask_AP50_95_mean": 0.8633028623573858,
+      "Mask_AP50_95_sd_sample": 0.002236019502439114,
+      "Mask_AP50_95_min": 0.860989664386089,
+      "Mask_AP50_95_max": 0.8654527485998131,
+      "Mask_AP50_mean": 0.9265291491707167,
+      "Mask_AP50_sd_sample": 0.0016247556525214183,
+      "Mask_AP50_min": 0.9247657826669304,
+      "Mask_AP50_max": 0.9279655709739957,
+      "Mask_AP75_mean": 0.9221341158493125,
+      "Mask_AP75_sd_sample": 0.0022697318223922295,
+      "Mask_AP75_min": 0.9195469450906507,
+      "Mask_AP75_max": 0.9237904589228746
+    },
+    {
+      "Model": "YOLO26n-seg",
+      "Seeds": 3,
+      "Mask_AP50_95_mean": 0.8473598924913835,
+      "Mask_AP50_95_sd_sample": 0.004180126471439266,
+      "Mask_AP50_95_min": 0.8425424589768774,
+      "Mask_AP50_95_max": 0.8500288169872063,
+      "Mask_AP50_mean": 0.914995414606303,
+      "Mask_AP50_sd_sample": 0.00041610579728563015,
+      "Mask_AP50_min": 0.9145301643713473,
+      "Mask_AP50_max": 0.9153319661337542,
+      "Mask_AP75_mean": 0.9076743262908744,
+      "Mask_AP75_sd_sample": 0.0010122365315929681,
+      "Mask_AP75_min": 0.9065147276962574,
+      "Mask_AP75_max": 0.9083810945623971
+    },
+    {
+      "Model": "Mask R-CNN",
+      "Seeds": 3,
+      "Mask_AP50_95_mean": 0.7947343128808658,
+      "Mask_AP50_95_sd_sample": 0.003794435769566642,
+      "Mask_AP50_95_min": 0.7904348727539234,
+      "Mask_AP50_95_max": 0.7976146859094957,
+      "Mask_AP50_mean": 0.9105577899419207,
+      "Mask_AP50_sd_sample": 0.008055928926647396,
+      "Mask_AP50_min": 0.9031904992756513,
+      "Mask_AP50_max": 0.9191597949660723,
+      "Mask_AP75_mean": 0.8752332650965725,
+      "Mask_AP75_sd_sample": 0.006361143234114682,
+      "Mask_AP75_min": 0.868510187176516,
+      "Mask_AP75_max": 0.8811568951372533
+    }
+  ],
+  "descriptive_differences": [
+    {
+      "Comparison": "YOLO11n-seg minus Mask R-CNN",
+      "Mask_AP50_95_mean_difference": 0.06856854947652002,
+      "Mask_AP50_mean_difference": 0.015971359228796,
+      "Mask_AP75_mean_difference": 0.046900850752739975,
+      "Interpretation": "Descriptive mean difference across 3 seeds; not a significance or equivalence test."
+    },
+    {
+      "Comparison": "YOLO26n-seg minus Mask R-CNN",
+      "Mask_AP50_95_mean_difference": 0.052625579610517725,
+      "Mask_AP50_mean_difference": 0.004437624664382245,
+      "Mask_AP75_mean_difference": 0.0324410611943019,
+      "Interpretation": "Descriptive mean difference across 3 seeds; not a significance or equivalence test."
+    },
+    {
+      "Comparison": "YOLO11n-seg minus YOLO26n-seg",
+      "Mask_AP50_95_mean_difference": 0.0159429698660023,
+      "Mask_AP50_mean_difference": 0.011533734564413756,
+      "Mask_AP75_mean_difference": 0.014459789558438074,
+      "Interpretation": "Descriptive mean difference across 3 seeds; not a significance or equivalence test."
+    }
+  ],
+  "predictions_provenance": [
+    {
+      "Model": "YOLO11n-seg",
+      "Seed": 2026,
+      "Predictions": "/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖/03_Resultados/05_Reportes/CERDOS_09_COCO_Armonizado/CERDOS_09_Pred_YOLO_coco.json",
+      "Pred_SHA256": "243de51cd72aac7f716732ecc412d33ba36e137782c8cf49dddbf6c7a238ae89",
+      "Source": "Archive 09"
+    },
+    {
+      "Model": "YOLO11n-seg",
+      "Seed": 2027,
+      "Predictions": "/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖/03_Resultados/05_Reportes/CERDOS_33_COCO_9_Semillas/CERDOS_33_Pred_YOLO11_seed_2027.json",
+      "Pred_SHA256": "345009176082f981ff435c8fda27a6fe1fc62a9ff0a6215adc3e20a6649241aa",
+      "Source": "New 33"
+    },
+    {
+      "Model": "YOLO11n-seg",
+      "Seed": 2028,
+      "Predictions": "/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖/03_Resultados/05_Reportes/CERDOS_33_COCO_9_Semillas/CERDOS_33_Pred_YOLO11_seed_2028.json",
+      "Pred_SHA256": "e580c1373daba9607788adcf7985403a3d20ace2e9381243825b86d1cffdd611",
+      "Source": "New 33"
+    },
+    {
+      "Model": "YOLO26n-seg",
+      "Seed": 2026,
+      "Predictions": "/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖/03_Resultados/05_Reportes/CERDOS_23_YOLO26_COCO_Test/CERDOS_23_Pred_seed_2026.json",
+      "Pred_SHA256": "fe29bc8fe1da110b643e08ecbfa12beb00fe7409a3ff975c1ccba5f353ce2657",
+      "Source": "Archive 23"
+    },
+    {
+      "Model": "YOLO26n-seg",
+      "Seed": 2027,
+      "Predictions": "/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖/03_Resultados/05_Reportes/CERDOS_23_YOLO26_COCO_Test/CERDOS_23_Pred_seed_2027.json",
+      "Pred_SHA256": "d52bdcf66c993cfc5a3afc4bafbd7aea4a269cb5990167136ae9c9d528bfb2d8",
+      "Source": "Archive 23"
+    },
+    {
+      "Model": "YOLO26n-seg",
+      "Seed": 2028,
+      "Predictions": "/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖/03_Resultados/05_Reportes/CERDOS_23_YOLO26_COCO_Test/CERDOS_23_Pred_seed_2028.json",
+      "Pred_SHA256": "56f03080cc6e432ec9e53f311702b09f991d4dcdff7df91c1eb41f6833949457",
+      "Source": "Archive 23"
+    },
+    {
+      "Model": "Mask R-CNN",
+      "Seed": 2026,
+      "Predictions": "/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖/03_Resultados/05_Reportes/CERDOS_09_COCO_Armonizado/CERDOS_09_Pred_MaskRCNN_coco.json",
+      "Pred_SHA256": "de02d6e7ec86ab867fcf74e0a5234203f42cb8d9fc14f32aab6afa4bd7ddec11",
+      "Source": "Archive 09"
+    },
+    {
+      "Model": "Mask R-CNN",
+      "Seed": 2027,
+      "Predictions": "/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖/03_Resultados/05_Reportes/CERDOS_33_COCO_9_Semillas/CERDOS_33_Pred_MaskRCNN_seed_2027.json",
+      "Pred_SHA256": "743c340088adddebc09a48c377340973575ebdffb3e717d431e3cbab04ef96c5",
+      "Source": "New 33"
+    },
+    {
+      "Model": "Mask R-CNN",
+      "Seed": 2028,
+      "Predictions": "/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖/03_Resultados/05_Reportes/CERDOS_33_COCO_9_Semillas/CERDOS_33_Pred_MaskRCNN_seed_2028.json",
+      "Pred_SHA256": "2c1473542f4ced94c34d3f0960e3e8f73ea9e5377737d0a2c00b65a5c3039efd",
+      "Source": "New 33"
+    }
+  ],
+  "checkpoint_sha256": {
+    "('YOLO11n-seg', 2026)": "781c3bcf3bd4c1511f0eca5fb1a40c26a20a4dc54ae1de65890f33a7015d804a",
+    "('YOLO11n-seg', 2027)": "3e4d21f87d4d64e3b4a31ff4d6cd492642ff9e0f66aa0a9303029f964945d262",
+    "('YOLO11n-seg', 2028)": "620e3ab215d287915495c9fc0bb8a139a72d99ea1d4fcc745cd96fcdbfa66eb8",
+    "('YOLO26n-seg', 2026)": "ca7d45d3ec5226ba5d0193fa1dabe49862c75bc667c7685698e5ef31594e72bb",
+    "('YOLO26n-seg', 2027)": "a754fe8989cfba5f51d7e2392296e2ca992b0105007c3d37be832c8a0dffca3e",
+    "('YOLO26n-seg', 2028)": "43ae5a9bf1cf2b20f2fec4b4bd6a99992fd948a7482790a55d5e0e6cdd54c06a",
+    "('Mask R-CNN', 2026)": "2eeffdf14bdba6550653d05e4b58d7c388e63d68d329ebd415492972f662eb2e",
+    "('Mask R-CNN', 2027)": "40a9287c045da2328a54ea3d7ef44710cbf9c731b286418a834b9c576a2ae1f9",
+    "('Mask R-CNN', 2028)": "be5040bd5d62ce78e9c57fe99b407c2df93cf408b7d34c44be6b6a30223cebf9"
+  },
+  "limitations": [
+    "The FaroPigSeg test set was consulted in earlier experiments; this is a post-hoc expanded descriptive analysis.",
+    "Only five acquisition-date groups, with uncertain independence among animals, cameras and sessions.",
+    "Three random seeds per architecture do not create independent farms or solve the low number of date clusters.",
+    "YOLO11/YOLO26 and Mask R-CNN have different architectures, input resolutions, batch sizes and epoch budgets.",
+    "COCO segmentation AP is calculated from the same 373-image GT. No new checkpoint selection used test.",
+    "No claims of external generalization, occlusion robustness, tracking or on-farm deployment.",
+    "Validation thresholds for counting and confidence calibration are separate analyses, not optimized here.",
+    "Device-specific training/latency measurements are not a fair hardware-normalized comparison."
+  ],
+  "test_is_new_independent_validation": false,
+  "inference_on_new_checkpoints_only": true
+}

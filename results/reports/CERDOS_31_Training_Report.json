@@ -1,0 +1,43 @@
+{
+  "experiment": 31,
+  "created_utc": "2026-10-20T15:32:53.225806+00:00",
+  "model": "YOLO11n-seg",
+  "seeds": [
+    2026,
+    2027,
+    2028
+  ],
+  "source_of_seed_2026": "Experiment 03, unchanged",
+  "summary": [
+    {
+      "seed": 2026,
+      "status": "original",
+      "best_validation_mask_AP": 0.87781,
+      "best_epoch": 56,
+      "epochs_recorded": 60,
+      "weights_sha256": "781c3bcf3bd4c1511f0eca5fb1a40c26a20a4dc54ae1de65890f33a7015d804a",
+      "weights_path": "/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖/03_Resultados/06_Entrenamiento/YOLO11n_fecha_v1/weights/best.pt"
+    },
+    {
+      "seed": 2027,
+      "status": "new",
+      "best_validation_mask_AP": 0.87053,
+      "best_epoch": 60,
+      "epochs_recorded": 60,
+      "weights_sha256": "3e4d21f87d4d64e3b4a31ff4d6cd492642ff9e0f66aa0a9303029f964945d262",
+      "weights_path": "/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖/03_Resultados/06_Entrenamiento/YOLO11n_multisemilla_v1/seed_2027/weights/best.pt"
+    },
+    {
+      "seed": 2028,
+      "status": "new",
+      "best_validation_mask_AP": 0.87041,
+      "best_epoch": 59,
+      "epochs_recorded": 60,
+      "weights_sha256": "620e3ab215d287915495c9fc0bb8a139a72d99ea1d4fcc745cd96fcdbfa66eb8",
+      "weights_path": "/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖/03_Resultados/06_Entrenamiento/YOLO11n_multisemilla_v1/seed_2028/weights/best.pt"
+    }
+  ],
+  "protocol_path": "/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖/03_Resultados/05_Reportes/CERDOS_31_YOLO11n_Semillas/CERDOS_31_Protocol.json",
+  "test_evaluated": false,
+  "note": "Validation-only training summary; test comparison is not performed here."
+}

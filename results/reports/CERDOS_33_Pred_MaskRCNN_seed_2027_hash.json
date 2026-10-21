@@ -1,0 +1,8 @@
+{
+  "protocol_sha256": "e984f4bcd049f088a9a61a8535ffbaa88cd3fcb5ff1695a68cbf3d86dc65a3f1",
+  "weights_sha256": "40a9287c045da2328a54ea3d7ef44710cbf9c731b286418a834b9c576a2ae1f9",
+  "predictions_sha256": "743c340088adddebc09a48c377340973575ebdffb3e717d431e3cbab04ef96c5",
+  "n_predictions": 8939,
+  "finished_utc": "2026-10-20T19:28:12.740656+00:00",
+  "runtime_seconds_this_session": 32.29
+}
