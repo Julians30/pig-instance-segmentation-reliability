@@ -1,0 +1,232 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "437405f037cc"
+   },
+   "source": [
+    "# 🐖 05 | Auditoría del modelo YOLO y conteo de instancias\n",
+    "\n",
+    "**RECURSO: CPU — SIN ACELERADOR**. No vuelve a entrenar ni consultar el conjunto test con el modelo; examina únicamente resultados ya calculados, archivos y distribución de anotaciones.\n",
+    "\n",
+    "**Proyecto:** Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖\n",
+    "\n",
+    "Los notebooks son independientes: cada uno utiliza los productos guardados por la etapa anterior, sin repetir descarga o entrenamiento.\n"
+   ],
+   "id": "437405f037cc"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "91b8e1a1b054"
+   },
+   "source": [
+    "## Propósito\n",
+    "\n",
+    "- Confirmar **cuántas imágenes e instancias anotadas** existen en el dataset y en las 373 imágenes de test.\n",
+    "- Separar **instancias repetidas** de animales únicos (no hay identificación individual).\n",
+    "- Analizar las 60 épocas y las métricas ya guardadas de YOLO11n-seg.\n",
+    "- Exportar un **Excel**, dos figuras, reporte JSON y ZIP de auditoría. Se usan los resultados previos del notebook 04; no se ejecuta de nuevo sobre test.\n"
+   ],
+   "id": "91b8e1a1b054"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "id": "0330d620f1cb"
+   },
+   "source": [
+    "%pip -q install pandas openpyxl pyyaml matplotlib pillow\n"
+   ],
+   "execution_count": null,
+   "outputs": [],
+   "id": "0330d620f1cb"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "1367b35396a8"
+   },
+   "source": [
+    "from google.colab import drive\n",
+    "from pathlib import Path\n",
+    "from datetime import datetime, timezone\n",
+    "import json, hashlib, os\n",
+    "\n",
+    "drive.mount('/content/drive')\n",
+    "ROOT=Path('/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖')\n",
+    "if not ROOT.is_dir():\n",
+    "    raise FileNotFoundError('No encuentro la carpeta del proyecto. Comprueba que Colab monta la cuenta correcta y que el nombre no cambió: '+str(ROOT))\n",
+    "DATA=ROOT/'01_Datasets'/'FaroPigSeg'\n",
+    "EXTRACT=DATA/'extraido'/'FaroPigSeg'\n",
+    "SPLIT=DATA/'split_fecha_v1'\n",
+    "RES=ROOT/'03_Resultados'\n",
+    "EXP=ROOT/'05_Exportaciones_ZIP'\n",
+    "for s in ['01_Exploracion','02_Segmentacion','03_Metricas','04_Figuras','05_Reportes','06_Entrenamiento']:\n",
+    "    (RES/s).mkdir(parents=True,exist_ok=True)\n",
+    "EXP.mkdir(exist_ok=True,parents=True)\n",
+    "MANIFEST=SPLIT/'particion_fecha_manifest.json'\n",
+    "YAML=SPLIT/'data_fecha.yaml'\n",
+    "if not (MANIFEST.is_file() and YAML.is_file()):\n",
+    "    raise FileNotFoundError('Faltan los archivos de partición congelada; ejecutar notebook 02 en CPU antes de continuar.')\n",
+    "part=json.loads(MANIFEST.read_text(encoding='utf-8'))\n",
+    "assert len(set(part['asignaciones_fecha'].values())-{'train','val','test'})==0\n",
+    "print('Carpeta del proyecto:',ROOT)\n",
+    "print('Fechas por grupo:',{k:sum(v==k for v in part['asignaciones_fecha'].values()) for k in ('train','val','test')})\n"
+   ],
+   "execution_count": null,
+   "outputs": [],
+   "id": "1367b35396a8"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "ca65d054dd68"
+   },
+   "source": [
+    "import pandas as pd,numpy as np,matplotlib.pyplot as plt\n",
+    "from collections import Counter\n",
+    "from matplotlib.ticker import MaxNLocator\n",
+    "INDEX=RES/'01_Exploracion'/'FaroPigSeg_inventario.xlsx'\n",
+    "RESULTS_CSV=RES/'06_Entrenamiento'/'YOLO11n_fecha_v1'/'results.csv'\n",
+    "TEST_JSON=RES/'03_Metricas'/'CERDOS_04_Evaluacion_test.json'\n",
+    "if not INDEX.is_file():\n",
+    "    raise FileNotFoundError(f'Falta {INDEX}; conserva la auditoría original o ejecuta notebook 01 (CPU).')\n",
+    "if not RESULTS_CSV.is_file() or not TEST_JSON.is_file():\n",
+    "    raise FileNotFoundError('Faltan los resultados de YOLO 03/04. No se repetirá test automáticamente.')\n",
+    "imgs=pd.read_excel(INDEX,sheet_name='Imagenes')\n",
+    "need={'imagen','instancias_validas','particion'}\n",
+    "assert need.issubset(imgs.columns), f'Faltan columnas en inventario: {need-set(imgs.columns)}'\n",
+    "if imgs['imagen'].duplicated().any():\n",
+    "    raise RuntimeError('Nombres de archivo repetidos: no se puede enlazar con seguridad al inventario. Revisar origen.')\n",
+    "imgs['fecha']=imgs['imagen'].astype(str).str.extract(r'^(\\d{4}-\\d{2}-\\d{2})')[0]\n",
+    "assert imgs['fecha'].notna().all(), 'Alguna imagen no tiene fecha en el nombre.'\n",
+    "imgs['nuevo_split']=imgs['fecha'].map(part['asignaciones_fecha'])\n",
+    "assert imgs['nuevo_split'].notna().all(), 'Partición congelada incompleta.'\n",
+    "for split in ('train','val','test'):\n",
+    "    listed=[Path(x.strip()).name for x in (SPLIT/f'{split}.txt').read_text(encoding='utf8').splitlines() if x.strip()]\n",
+    "    found=imgs.loc[imgs.nuevo_split.eq(split),'imagen'].tolist()\n",
+    "    assert sorted(listed)==sorted(found), f'Inconsistencia entre manifiesto e inventario en {split}'\n",
+    "resumen=(imgs.groupby('nuevo_split',as_index=False).agg(imagenes=('imagen','size'),instancias=('instancias_validas','sum'),fechas=('fecha','nunique')))\n",
+    "fechas=imgs.groupby(['fecha','nuevo_split'],as_index=False).agg(imagenes=('imagen','size'),instancias=('instancias_validas','sum'))\n",
+    "historico=pd.read_csv(RESULTS_CSV);historico.columns=historico.columns.str.strip()\n",
+    "yolo=json.loads(TEST_JSON.read_text(encoding='utf8'))\n",
+    "assert int(yolo['test_count'])==int(resumen.set_index('nuevo_split').loc['test','imagenes'])\n",
+    "print('TOTAL imágenes:',len(imgs),'TOTAL instancias anotadas:',int(imgs['instancias_validas'].sum()))\n",
+    "print(resumen.to_string(index=False))\n",
+    "print('Imágenes representadas visualmente en el ZIP 04: 12; NO es el tamaño del test.')\n",
+    "print('Épocas registradas:',len(historico))\n",
+    "print('YOLO test mAP50-95 de máscaras:',yolo['seg_map50_95'])\n"
+   ],
+   "execution_count": null,
+   "outputs": [],
+   "id": "ca65d054dd68"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/",
+     "height": 930
+    },
+    "id": "e0f4ad7f7c22"
+   },
+   "source": [
+    "from matplotlib import pyplot as plt\n",
+    "REPORT_DIR=RES/'05_Reportes';MET=RES/'03_Metricas';FIG=RES/'04_Figuras'\n",
+    "output=MET/'CERDOS_05_Auditoria_Resultados.xlsx'\n",
+    "with pd.ExcelWriter(output,engine='openpyxl') as w:\n",
+    "    resumen.to_excel(w,sheet_name='Resumen_particiones',index=False)\n",
+    "    fechas.to_excel(w,sheet_name='Fechas_y_conteos',index=False)\n",
+    "    imgs[['imagen','particion','fecha','nuevo_split','instancias_validas']].to_excel(w,sheet_name='Imagenes',index=False)\n",
+    "    historico.to_excel(w,sheet_name='Epocas_YOLO',index=False)\n",
+    "    pd.DataFrame([yolo]).to_excel(w,sheet_name='Metricas_test_YOLO',index=False)\n",
+    "\n",
+    "fig,ax=plt.subplots(figsize=(11,5))\n",
+    "f=fechas.sort_values('fecha')\n",
+    "ax.bar(range(len(f)),f['instancias'])\n",
+    "ax.set_xticks(range(len(f)));ax.set_xticklabels(f['fecha'],rotation=70,ha='right',fontsize=8)\n",
+    "ax.set_ylabel('Instancias anotadas (no individuos únicos)');ax.set_title('FaroPigSeg — apariciones de cerdos por fecha')\n",
+    "fig.tight_layout();figure_counts=FIG/'CERDOS_05_Anotaciones_por_Fecha.png';fig.savefig(figure_counts,dpi=170);plt.show()\n",
+    "\n",
+    "cols=['train/seg_loss','val/seg_loss','metrics/mAP50-95(M)']\n",
+    "fig,axes=plt.subplots(1,2,figsize=(11,4))\n",
+    "for col,label in [('train/seg_loss','Pérdida de segmentación (train)'),('val/seg_loss','Pérdida de segmentación (val)')]:\n",
+    "    if col in historico:axes[0].plot(historico['epoch'],historico[col],label=label)\n",
+    "axes[0].set_title('Historial YOLO');axes[0].set_xlabel('Época');axes[0].legend()\n",
+    "if 'metrics/mAP50-95(M)' in historico:\n",
+    "    axes[1].plot(historico['epoch'],historico['metrics/mAP50-95(M)'])\n",
+    "axes[1].set_title('mAP50-95 máscara (validación)');axes[1].set_xlabel('Época');axes[1].set_ylim(0,1)\n",
+    "fig.tight_layout();figure_curves=FIG/'CERDOS_05_Curvas_YOLO.png';fig.savefig(figure_curves,dpi=170);plt.show()\n",
+    "\n",
+    "report={'etapa':'05_auditoria_CPU','fecha_utc':datetime.now(timezone.utc).isoformat(),\n",
+    "'num_imagenes':int(len(imgs)),'num_instancias_anotadas':int(imgs.instancias_validas.sum()),\n",
+    "'num_imagenes_test':int(resumen.set_index('nuevo_split').loc['test','imagenes']),\n",
+    "'num_instancias_test':int(resumen.set_index('nuevo_split').loc['test','instancias']),\n",
+    "'numero_fotografias_ejemplo_previas':12,'epocas_yolo':int(len(historico)),\n",
+    "'metricas_yolo_test':yolo,'nota':'Instancias anotadas no equivalen a cerdos físicos únicos. No se reevalúa test.'}\n",
+    "jsonpath=REPORT_DIR/'CERDOS_05_Auditoria.json'\n",
+    "jsonpath.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf8')\n",
+    "print('Excel de auditoría:',output)\n"
+   ],
+   "execution_count": null,
+   "outputs": [],
+   "id": "e0f4ad7f7c22"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/",
+     "height": 54
+    },
+    "id": "8e41602013b8"
+   },
+   "source": [
+    "import zipfile\n",
+    "files_out=[output,figure_counts,figure_curves,jsonpath]\n",
+    "export=EXP/'CERDOS_05_Auditoria_Resultados.zip'\n",
+    "with zipfile.ZipFile(export,'w',compression=zipfile.ZIP_DEFLATED) as z:\n",
+    "    for p in files_out:z.write(p,arcname=p.name)\n",
+    "print('✅ ZIP:',export)\n",
+    "from google.colab import files as colab_files\n",
+    "colab_files.download(str(export))\n"
+   ],
+   "execution_count": null,
+   "outputs": [],
+   "id": "8e41602013b8"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "f0071dc93bc8"
+   },
+   "source": [
+    "**Interpretación:** se cuentan apariciones anotadas; sin identificadores únicos ni secuencias no se puede inferir cuántos cerdos físicos hubo. Continuar con **06 Mask R-CNN (GPU)**.\n"
+   ],
+   "id": "f0071dc93bc8"
+  }
+ ],
+ "metadata": {
+  "colab": {
+   "provenance": []
+  },
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "name": "python"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}

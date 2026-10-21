@@ -1,0 +1,251 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "42df9add",
+   "metadata": {
+    "id": "42df9add"
+   },
+   "source": [
+    "# 🐖 04 | Segmentación y evaluación independiente\n",
+    "\n",
+    "**RECURSO REQUERIDO: GPU (T4 o superior)**. Este notebook realiza exclusivamente su propia etapa. **No cambies CPU/GPU dentro del notebook.**\n",
+    "\n",
+    "Proyecto: Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖. Datos: FaroPigSeg, licencia reportada CC BY-NC 4.0; citar fuente https://github.com/yudong888/FaroPig-Datasets.\n",
+    "\n",
+    "**Ruta general:** `MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖/`. Ejecutar en orden 00 → 01 → 02 → 03 → 04. Todos los resultados se guardan en Drive."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "7baa4e91",
+   "metadata": {
+    "id": "7baa4e91"
+   },
+   "source": [
+    "## Objetivo\n",
+    "Usar `best.pt` ya entrenado para generar máscaras predichas, contar objetos visibles y evaluar **una sola vez** las métricas en el test agrupado por fecha. Guarda archivos Excel, PNG, JSON y un ZIP. No reentrena el modelo ni vuelve a preparar el dataset.\n",
+    "\n",
+    "**ATENCIÓN:** las áreas obtenidas se expresan en píxeles. Este dataset es de imágenes fijas, no permite medir trayectorias ni comportamientos temporales."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "8ce17fae",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "8ce17fae"
+   },
+   "outputs": [],
+   "source": [
+    "import torch\n",
+    "assert torch.cuda.is_available(),'Activa GPU T4 en Colab antes de ejecutar este notebook.'\n",
+    "print('✅ GPU:',torch.cuda.get_device_name(0))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "e136b780",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "e136b780"
+   },
+   "outputs": [],
+   "source": [
+    "%pip -q install \"ultralytics>=8.3,<9\" pandas openpyxl pyyaml pillow"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "f39cea6b",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "f39cea6b"
+   },
+   "outputs": [],
+   "source": [
+    "from google.colab import drive\n",
+    "from pathlib import Path\n",
+    "from datetime import datetime, timezone\n",
+    "import json, os\n",
+    "\n",
+    "drive.mount('/content/drive')\n",
+    "ROOT = Path('/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖')\n",
+    "if not ROOT.is_dir():\n",
+    "    raise FileNotFoundError(\n",
+    "        'No se encontró la carpeta principal. Verifica la cuenta de Google y el nombre de la carpeta: '\n",
+    "        'Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖'\n",
+    "    )\n",
+    "DATA_ROOT = ROOT / '01_Datasets' / 'FaroPigSeg' / 'extraido' / 'FaroPigSeg'\n",
+    "DATASET_DIR = ROOT / '01_Datasets' / 'FaroPigSeg'\n",
+    "RES = ROOT / '03_Resultados'\n",
+    "EXPO = ROOT / '05_Exportaciones_ZIP'\n",
+    "for sub in ('01_Exploracion','02_Segmentacion','03_Metricas','04_Figuras','05_Reportes','06_Entrenamiento'):\n",
+    "    (RES / sub).mkdir(parents=True, exist_ok=True)\n",
+    "EXPO.mkdir(parents=True,exist_ok=True)\n",
+    "print('Proyecto:',ROOT)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "de9c6f9c",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "de9c6f9c"
+   },
+   "outputs": [],
+   "source": [
+    "from ultralytics import YOLO\n",
+    "import pandas as pd, numpy as np, torch, yaml, cv2, zipfile, shutil, hashlib\n",
+    "YAML=DATASET_DIR/'split_fecha_v1'/'data_fecha.yaml'\n",
+    "BEST=RES/'06_Entrenamiento'/'YOLO11n_fecha_v1'/'weights'/'best.pt'\n",
+    "if not YAML.is_file():raise FileNotFoundError('Primero ejecuta notebook 02 (CPU) para generar el YAML.')\n",
+    "if not BEST.is_file():raise FileNotFoundError('Primero ejecuta notebook 03 (GPU) para generar best.pt.')\n",
+    "CFG=yaml.safe_load(YAML.read_text(encoding='utf8'))\n",
+    "TEST_TXT=Path(CFG['test']);assert TEST_TXT.is_file()\n",
+    "SAMPLES=[Path(x) for x in TEST_TXT.read_text(encoding='utf8').splitlines() if x.strip()]\n",
+    "assert len(SAMPLES)>0\n",
+    "model=YOLO(str(BEST))\n",
+    "OUT=RES/'02_Segmentacion'/'YOLO11n_fecha_v1'\n",
+    "OUT.mkdir(parents=True,exist_ok=True)\n",
+    "METR=RES/'03_Metricas'/'CERDOS_04_Evaluacion_test.json'\n",
+    "print('Imágenes en prueba:',len(SAMPLES));print('Modelo:',BEST)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "9e5668c2",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "9e5668c2"
+   },
+   "outputs": [],
+   "source": [
+    "if METR.exists():\n",
+    "    prev=json.loads(METR.read_text(encoding='utf8'))\n",
+    "    if prev.get('weights_sha256') != hashlib.sha256(BEST.read_bytes()).hexdigest():\n",
+    "        raise RuntimeError('Cambió best.pt; la evaluación anterior no corresponde a estos pesos. Se requiere nueva versión del experimento.')\n",
+    "    print('✅ La evaluación en test ya existe; se reutiliza sin volver a consultar el test.')\n",
+    "    m=json.loads(METR.read_text(encoding='utf8'))\n",
+    "else:\n",
+    "    scores=model.val(data=str(YAML),split='test',device=0,imgsz=640,batch=8,plots=False,\n",
+    "                     project=str(OUT),name='metricas_test',exist_ok=True)\n",
+    "    m={'etapa':'04_evaluacion_GPU','fecha_utc':datetime.now(timezone.utc).isoformat(),\n",
+    "       'test_count':len(SAMPLES),'weights':str(BEST),'weights_sha256':hashlib.sha256(BEST.read_bytes()).hexdigest(),'split':'test_agrupado_por_fecha',\n",
+    "       'seg_map50':float(scores.seg.map50),'seg_map50_95':float(scores.seg.map),\n",
+    "       'seg_map75':float(scores.seg.map75),'box_map50':float(scores.box.map50),\n",
+    "       'box_map50_95':float(scores.box.map),\n",
+    "       'limitaciones':'Las fechas no garantizan independencia por granja o animal.'}\n",
+    "    METR.write_text(json.dumps(m,ensure_ascii=False,indent=2),encoding='utf8')\n",
+    "print('Resultados calculados (no inventados):')\n",
+    "print({k:v for k,v in m.items() if k.endswith(('map50','map50_95','map75'))})"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "21e803fd",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "21e803fd"
+   },
+   "outputs": [],
+   "source": [
+    "# Predicciones cualitativas de muestra: evita generar miles de PNG en Drive.\n",
+    "ids=np.unique(np.linspace(0,len(SAMPLES)-1,min(12,len(SAMPLES)),dtype=int))\n",
+    "rows=[]\n",
+    "for i in ids:\n",
+    "    img=SAMPLES[int(i)]\n",
+    "    rr=model.predict(source=str(img),device=0,conf=0.25,verbose=False,save=False)[0]\n",
+    "    annotated=rr.plot()\n",
+    "    imgout=OUT/f'{img.stem}_prediccion.png'\n",
+    "    cv2.imwrite(str(imgout),annotated)\n",
+    "    boxes=rr.boxes\n",
+    "    n=int(len(boxes)) if boxes is not None else 0\n",
+    "    confidencias=boxes.conf.detach().cpu().numpy().tolist() if n else []\n",
+    "    areas=[]\n",
+    "    if rr.masks is not None and rr.masks.data is not None:\n",
+    "        areas=rr.masks.data.detach().float().cpu().numpy().sum(axis=(1,2)).astype(float).tolist()\n",
+    "    rows.append({'imagen':img.name,'cerdos_detectados':n,\n",
+    "                 'confianza_media':float(np.mean(confidencias)) if confidencias else None,\n",
+    "                 'suma_areas_mascara_px2_aprox':float(sum(areas)) if areas else 0,\n",
+    "                 'archivo_png':imgout.name})\n",
+    "\n",
+    "EXCEL=RES/'03_Metricas'/'CERDOS_04_Resultados_Segmentacion.xlsx'\n",
+    "with pd.ExcelWriter(EXCEL,engine='openpyxl') as wr:\n",
+    "    pd.DataFrame([m]).to_excel(wr,sheet_name='Metricas_test',index=False)\n",
+    "    pd.DataFrame(rows).to_excel(wr,sheet_name='Predicciones_ejemplo',index=False)\n",
+    "print('✅ Predicciones PNG:',OUT,'\\n✅ Excel:',EXCEL)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "d98bc8b2",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/",
+     "height": 72
+    },
+    "id": "d98bc8b2"
+   },
+   "outputs": [],
+   "source": [
+    "from google.colab import files\n",
+    "marca=datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')\n",
+    "ZIP=EXPO/f'CERDOS_04_Segmentacion_Resultados_{marca}.zip'\n",
+    "with zipfile.ZipFile(ZIP,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=6) as z:\n",
+    "    for f in sorted(OUT.rglob('*')):\n",
+    "        if f.is_file():z.write(f,arcname=str(Path('segmentacion')/f.relative_to(OUT)))\n",
+    "    for f in (EXCEL,METR,DATASET_DIR/'split_fecha_v1'/'particion_fecha_manifest.json'):\n",
+    "        if f.is_file():z.write(f,arcname=str(Path('informes')/f.name))\n",
+    "with zipfile.ZipFile(ZIP) as z:\n",
+    "    if z.testzip():raise RuntimeError('ZIP generado con error.')\n",
+    "print('✅ ZIP de resultados:',ZIP)\n",
+    "print('✅ El ZIP no incluye el dataset original ni vuelve a entrenar.')\n",
+    "files.download(str(ZIP))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "c8c972aa",
+   "metadata": {
+    "id": "c8c972aa"
+   },
+   "source": [
+    "## Interpretación científica\n",
+    "Las métricas de máscaras corresponden a **segmentación de instancias**. La fiabilidad del seguimiento y de los indicadores conductuales se estudiará **más adelante con videos anotados**. No concluir generalización a otra granja a partir de una sola fuente."
+   ]
+  }
+ ],
+ "metadata": {
+  "colab": {
+   "provenance": [],
+   "gpuType": "T4"
+  },
+  "kernelspec": {
+   "display_name": "Python 3",
+   "name": "python3"
+  },
+  "accelerator": "GPU"
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}

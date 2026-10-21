@@ -1,0 +1,514 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "_Q-h6C_KYe7x"
+   },
+   "source": [
+    "# 🐖 09 | Evaluación armonizada YOLO11n-seg frente a Mask R-CNN\n",
+    "\n",
+    "**RECURSO: GPU T4**. No entrena ni altera pesos, no cambia semillas, umbrales ni particiones originales.\n",
+    "\n",
+    "**Objetivo:** recalcular métricas **COCOeval de máscaras** en las mismas **373 imágenes** de prueba congelada por fecha, utilizando **exactamente el mismo terreno de referencia (GT) y el mismo evaluador** para ambas arquitecturas. Se guardan predicciones en formato COCO RLE para reproducir análisis posteriores con CPU.\n",
+    "\n",
+    "> **Integridad científica:** esta es una armonización de evaluación sobre un test *ya consultado* en notebooks 04/07. **No es un nuevo test independiente**. No ajustar hiperparámetros usando estos resultados. Diferencias de presupuesto de entrenamiento (YOLO 60 épocas, Mask R-CNN 12) siguen presentes.\n",
+    "\n",
+    "**Secuencia:** ejecutar todas las celdas con GPU T4, autorizar Drive, recibir ZIP; después abrir notebook 10 con CPU.\n",
+    "**Corrección técnica (18-10-2026):** se evita la mutación de predicciones por `COCO.loadRes` al calcular AP global y por fecha. No se cambian el protocolo, los pesos, los umbrales ni los datos. Si los JSON de predicción existen en Drive, se reutilizan.\n"
+   ],
+   "id": "_Q-h6C_KYe7x"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "QihLwH8rYe7z"
+   },
+   "source": [
+    "## 1. Comprobar la GPU antes de trabajar\n",
+    "\n",
+    "Si Colab está con CPU, esta celda se detiene sin hacer ningún cómputo largo."
+   ],
+   "id": "QihLwH8rYe7z"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "kAdsGj6gYe70"
+   },
+   "execution_count": null,
+   "outputs": [],
+   "source": [
+    "import torch\n",
+    "assert torch.cuda.is_available(), 'Activa GPU T4: Entorno de ejecución > Cambiar tipo de entorno de ejecución > T4 GPU.'\n",
+    "print('✅ GPU:',torch.cuda.get_device_name(0))\n"
+   ],
+   "id": "kAdsGj6gYe70"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "8vEpM18iYe72"
+   },
+   "execution_count": null,
+   "outputs": [],
+   "source": [
+    "%pip -q install \"ultralytics>=8.3,<9\" \"pycocotools>=2.0.8,<3\" \"pyyaml>=6,<7\" \"pandas>=2,<3\" openpyxl pillow opencv-python-headless matplotlib\n"
+   ],
+   "id": "8vEpM18iYe72"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "4parRqFpYe73"
+   },
+   "source": [
+    "## 2. Montar Drive y bloquear datos/modelos usados anteriormente\n",
+    "\n",
+    "Se comprueban los **SHA-256** de los pesos y el YAML frente a los informes de los notebooks anteriores. Si algo cambió, este módulo se detiene."
+   ],
+   "id": "4parRqFpYe73"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "cbthc0wGYe73"
+   },
+   "execution_count": null,
+   "outputs": [],
+   "source": [
+    "from google.colab import drive\n",
+    "from pathlib import Path\n",
+    "from datetime import datetime, timezone\n",
+    "from contextlib import redirect_stdout\n",
+    "import hashlib,json,io,os,zipfile,platform,random,math,sys\n",
+    "import numpy as np,pandas as pd,yaml,cv2,torch,torchvision\n",
+    "from PIL import Image\n",
+    "from ultralytics import YOLO\n",
+    "from torchvision.models.detection import maskrcnn_resnet50_fpn\n",
+    "from torchvision.models.detection.faster_rcnn import FastRCNNPredictor\n",
+    "from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor\n",
+    "from torchvision.transforms.functional import to_tensor\n",
+    "from pycocotools.coco import COCO\n",
+    "from pycocotools.cocoeval import COCOeval\n",
+    "from pycocotools import mask as maskutils\n",
+    "\n",
+    "drive.mount('/content/drive')\n",
+    "ROOT=Path('/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖')\n",
+    "assert ROOT.is_dir(), f'Proyecto no encontrado: {ROOT}'\n",
+    "DATA=ROOT/'01_Datasets'/'FaroPigSeg'\n",
+    "SPLIT=DATA/'split_fecha_v1'\n",
+    "RES=ROOT/'03_Resultados'\n",
+    "EXPORT=ROOT/'05_Exportaciones_ZIP'\n",
+    "RUN=RES/'06_Entrenamiento'\n",
+    "REPORTS=RES/'05_Reportes'\n",
+    "METRICS=RES/'03_Metricas'\n",
+    "FIGURES=RES/'04_Figuras'\n",
+    "for p in [EXPORT,REPORTS,METRICS,FIGURES]: p.mkdir(exist_ok=True,parents=True)\n",
+    "YAML=SPLIT/'data_fecha.yaml'\n",
+    "MANIFEST=SPLIT/'particion_fecha_manifest.json'\n",
+    "YOLO_W=RUN/'YOLO11n_fecha_v1'/'weights'/'best.pt'\n",
+    "MASK_W=RUN/'MaskRCNN_fecha_v1'/'maskrcnn_best_model.pt'\n",
+    "YOLO_OLD=METRICS/'CERDOS_04_Evaluacion_test.json'\n",
+    "MASK_OLD=REPORTS/'CERDOS_07_Evaluacion_MaskRCNN.json'\n",
+    "MASK_DONE=RUN/'MaskRCNN_fecha_v1'/'ENTRENAMIENTO_FINALIZADO.json'\n",
+    "for p in [YAML,MANIFEST,YOLO_W,MASK_W,YOLO_OLD,MASK_OLD,MASK_DONE]:\n",
+    "    if not p.is_file(): raise FileNotFoundError(f'Falta dependencia de notebooks 02–07: {p}')\n",
+    "def file_sha256(path):\n",
+    "    h=hashlib.sha256()\n",
+    "    with open(path,'rb') as handle:\n",
+    "        for chunk in iter(lambda:handle.read(4*1024*1024),b''):h.update(chunk)\n",
+    "    return h.hexdigest()\n",
+    "yolo_previous=json.loads(YOLO_OLD.read_text(encoding='utf8'))\n",
+    "mask_previous=json.loads(MASK_OLD.read_text(encoding='utf8'))\n",
+    "mask_done=json.loads(MASK_DONE.read_text(encoding='utf8'))\n",
+    "assert file_sha256(YOLO_W)==yolo_previous['weights_sha256'],'YOLO: los pesos cambiaron desde el notebook 04'\n",
+    "assert file_sha256(MASK_W)==mask_previous['weights_sha256'],'Mask R-CNN: los pesos cambiaron desde el notebook 07'\n",
+    "assert file_sha256(YAML)==mask_previous['yaml_sha256']==mask_done['yaml_sha256'],'El YAML cambió desde el entrenamiento/evaluación Mask R-CNN'\n",
+    "config=yaml.safe_load(YAML.read_text(encoding='utf8'))\n",
+    "paths=[Path(v.strip()) for v in Path(config['test']).read_text(encoding='utf8').splitlines() if v.strip()]\n",
+    "assert len(paths)==373, f'Se esperaban 373 imágenes de prueba y se encontraron {len(paths)}'\n",
+    "assert len({str(p) for p in paths})==373 and all(p.is_file() for p in paths),'Imágenes ausentes o repetidas'\n",
+    "parts=json.loads(MANIFEST.read_text(encoding='utf8'))['asignaciones_fecha']\n",
+    "assert all(parts.get(p.name[:10])=='test' for p in paths),'El test no coincide con el manifiesto por fecha'\n",
+    "assert len({p.name[:10] for p in paths})==5,'Número inesperado de fechas de prueba'\n",
+    "print('✅ Test congelado:',len(paths),'imágenes,',len({p.name[:10] for p in paths}),'fechas')\n",
+    "print('✅ SHA-256 pesos y YAML comprobados, no se realizará entrenamiento.')\n"
+   ],
+   "id": "cbthc0wGYe73"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "ElKDFQZpYe75"
+   },
+   "source": [
+    "## 3. Construcción ÚNICA de anotaciones COCO desde los polígonos originales\n",
+    "\n",
+    "Las dos arquitecturas tendrán el **mismo archivo JSON de referencia**, construido con el procedimiento de máscaras poligonales usado en la evaluación anterior de Mask R-CNN. No se extraerán anotaciones de las predicciones."
+   ],
+   "id": "ElKDFQZpYe75"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "pY6rNaz8Ye75"
+   },
+   "execution_count": null,
+   "outputs": [],
+   "source": [
+    "DIR=REPORTS/'CERDOS_09_COCO_Armonizado'\n",
+    "DIR.mkdir(exist_ok=True,parents=True)\n",
+    "GT_FILE=DIR/'CERDOS_09_GT_test_coco.json'\n",
+    "YPRED_FILE=DIR/'CERDOS_09_Pred_YOLO_coco.json'\n",
+    "MPRED_FILE=DIR/'CERDOS_09_Pred_MaskRCNN_coco.json'\n",
+    "REP_FILE=REPORTS/'CERDOS_09_Armonizacion_COCO.json'\n",
+    "EXCEL=METRICS/'CERDOS_09_Comparacion_Armonizada_COCO.xlsx'\n",
+    "\n",
+    "PROTO={'pipeline':'CERDOS_09_COCOv1', 'image_count':373,'n_dates':5,'max_dets':100,\n",
+    "       'yolo_imgsz':640,'yolo_conf':0.001,'yolo_iou_nms':0.7,'yolo_retina_masks':True,\n",
+    "       'mask_score_thresh':0.001,'mask_bin_thresh':0.5,'gt_raster':'opencv_fillPoly_round_normalized',\n",
+    "       'test_file_sha256':file_sha256(Path(config['test'])),\n",
+    "       'yaml_sha256':file_sha256(YAML),'yolo_sha256':file_sha256(YOLO_W),\n",
+    "       'mask_sha256':file_sha256(MASK_W),'evaluator':'pycocotools COCOeval segm IoU .50:.95'}\n",
+    "\n",
+    "\n",
+    "# Proteger la reanudación: los JSON existentes solo se aceptan bajo el mismo protocolo.\n",
+    "CONFIG_FILE=DIR/'CERDOS_09_Protocolo.json'\n",
+    "if CONFIG_FILE.exists():\n",
+    "    previous=json.loads(CONFIG_FILE.read_text(encoding='utf8'))\n",
+    "    if previous!=PROTO:\n",
+    "        raise RuntimeError('La configuración 09 cambió. No reutilizar predicciones de otra versión.')\n",
+    "else:\n",
+    "    if any(p.exists() for p in [GT_FILE,YPRED_FILE,MPRED_FILE,REP_FILE,EXCEL]):\n",
+    "        raise RuntimeError('Hay resultados anteriores sin archivo de protocolo 09. Revisar manualmente antes de continuar.')\n",
+    "    CONFIG_FILE.write_text(json.dumps(PROTO,ensure_ascii=False,indent=2),encoding='utf8')\n",
+    "\n",
+    "\n",
+    "def encoded(mask):\n",
+    "    obj=maskutils.encode(np.asfortranarray(mask.astype(np.uint8)))\n",
+    "    obj['counts']=obj['counts'].decode('ascii')\n",
+    "    return obj\n",
+    "\n",
+    "def make_gt():\n",
+    "    ims=[];anns=[];n=0\n",
+    "    for im_id,path in enumerate(paths,start=1):\n",
+    "        with Image.open(path) as image:w,h=image.size\n",
+    "        ims.append({'id':im_id,'width':w,'height':h,'file_name':path.name})\n",
+    "        lab=Path(str(path).replace('/images/','/labels/')).with_suffix('.txt')\n",
+    "        assert lab.is_file(),f'Falta etiqueta: {lab}'\n",
+    "        for row in lab.read_text(encoding='utf-8-sig').splitlines():\n",
+    "            if not row.strip():continue\n",
+    "            words=row.split()\n",
+    "            assert int(words[0])==0,'Clase distinta de cerdo'\n",
+    "            data=np.asarray([float(x) for x in words[1:]],dtype=np.float32)\n",
+    "            assert len(data)>=6 and len(data)%2==0 and np.isfinite(data).all() and np.all((data>=0)&(data<=1)),f'Polígono inválido: {lab}'\n",
+    "            coords=np.rint(data.reshape(-1,2)*[w,h]).astype(np.int32)\n",
+    "            coords[:,0]=np.clip(coords[:,0],0,w-1);coords[:,1]=np.clip(coords[:,1],0,h-1)\n",
+    "            mask=np.zeros((h,w),np.uint8)\n",
+    "            cv2.fillPoly(mask,[coords],1)\n",
+    "            if mask.sum()<3:raise ValueError(f'Máscara degenerada en {lab}')\n",
+    "            n+=1\n",
+    "            rle=encoded(mask)\n",
+    "            bbox=[float(x) for x in maskutils.toBbox(rle)]\n",
+    "            anns.append({'id':n,'image_id':im_id,'category_id':1,'segmentation':rle,\n",
+    "                         'bbox':bbox,'area':int(mask.sum()),'iscrowd':0})\n",
+    "        if im_id%100==0:print('GT procesado',im_id,'/',len(paths))\n",
+    "    if len(anns)!=4648:raise RuntimeError(f'Instancias GT inesperadas: {len(anns)}, se esperaban 4648')\n",
+    "    return {'info':{'description':'FaroPigSeg — test congelado por fecha'},'licenses':[],\n",
+    "            'images':ims,'annotations':anns,'categories':[{'id':1,'name':'cerdo','supercategory':'animal'}]}\n",
+    "\n",
+    "if GT_FILE.exists():\n",
+    "    gt_json=json.loads(GT_FILE.read_text(encoding='utf8'))\n",
+    "    assert len(gt_json['images'])==373 and len(gt_json['annotations'])==4648,'GT previo incompleto'\n",
+    "else:\n",
+    "    gt_json=make_gt()\n",
+    "    GT_FILE.write_text(json.dumps(gt_json,ensure_ascii=False),encoding='utf8')\n",
+    "print('✅ Referencia COCO común:',len(gt_json['images']),'imágenes y',len(gt_json['annotations']),'instancias')\n"
+   ],
+   "id": "pY6rNaz8Ye75"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "lk1mu1JDYe77"
+   },
+   "source": [
+    "## 4. Inferencia YOLO11n-seg (sin entrenamiento)\n",
+    "\n",
+    "Predice sobre las 373 imágenes una sola vez con la configuración registrada; las máscaras se mantienen en la resolución original (`retina_masks=True`). Si se interrumpe Colab, al volver a ejecutar se reutiliza la predicción terminada."
+   ],
+   "id": "lk1mu1JDYe77"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "P5d_Y_v3Ye78"
+   },
+   "execution_count": null,
+   "outputs": [],
+   "source": [
+    "if YPRED_FILE.is_file():\n",
+    "    ypred=json.loads(YPRED_FILE.read_text(encoding='utf8'))\n",
+    "    print('✅ Predicciones YOLO anteriores reutilizadas:',len(ypred))\n",
+    "else:\n",
+    "    detector=YOLO(str(YOLO_W))\n",
+    "    ypred=[]\n",
+    "    for i,p in enumerate(paths,start=1):\n",
+    "        result=detector.predict(source=str(p),device=0,imgsz=PROTO['yolo_imgsz'],\n",
+    "            conf=PROTO['yolo_conf'],iou=PROTO['yolo_iou_nms'],max_det=PROTO['max_dets'],\n",
+    "            retina_masks=True,verbose=False,save=False)[0]\n",
+    "        scores=result.boxes.conf.detach().cpu().numpy() if result.boxes is not None else np.empty(0)\n",
+    "        with Image.open(p) as image:ow,oh=image.size\n",
+    "        if len(scores):\n",
+    "            assert result.masks is not None and result.masks.data is not None,'Detecciones YOLO sin máscaras'\n",
+    "            seg=result.masks.data.detach().cpu().numpy()\n",
+    "            assert seg.shape==(len(scores),oh,ow),f'Máscaras YOLO {seg.shape}; se esperaba {(len(scores),oh,ow)}. Revisar retina_masks en vez de redimensionar a ciegas.'\n",
+    "            for s,m in zip(scores,seg):\n",
+    "                m=(m>0.5).astype(np.uint8)\n",
+    "                if m.any():ypred.append({'image_id':i,'category_id':1,'segmentation':encoded(m),'score':float(s)})\n",
+    "        if i%50==0:print('YOLO inferencia',i,'/',len(paths))\n",
+    "    YPRED_FILE.write_text(json.dumps(ypred,ensure_ascii=False),encoding='utf8')\n",
+    "    del detector;torch.cuda.empty_cache()\n",
+    "print('✅ YOLO instancias predichas para COCO:',len(ypred))\n"
+   ],
+   "id": "P5d_Y_v3Ye78"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "p1SE074eYe79"
+   },
+   "source": [
+    "## 5. Inferencia Mask R-CNN con el mismo protocolo de evaluación\n",
+    "\n",
+    "Se carga **best_model** (época 8 del entrenamiento original), sin iniciar un nuevo proceso de ajuste. Máscaras umbralizadas a 0,5 como en notebook 07."
+   ],
+   "id": "p1SE074eYe79"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "YEd1E2ZlYe79"
+   },
+   "execution_count": null,
+   "outputs": [],
+   "source": [
+    "def build_maskrcnn():\n",
+    "    m=maskrcnn_resnet50_fpn(weights=None,weights_backbone=None,\n",
+    "        min_size=512,max_size=768,trainable_backbone_layers=3)\n",
+    "    dim=m.roi_heads.box_predictor.cls_score.in_features\n",
+    "    m.roi_heads.box_predictor=FastRCNNPredictor(dim,2)\n",
+    "    cin=m.roi_heads.mask_predictor.conv5_mask.in_channels\n",
+    "    m.roi_heads.mask_predictor=MaskRCNNPredictor(cin,256,2)\n",
+    "    m.roi_heads.score_thresh=PROTO['mask_score_thresh']\n",
+    "    m.roi_heads.detections_per_img=PROTO['max_dets']\n",
+    "    return m\n",
+    "\n",
+    "if MPRED_FILE.is_file():\n",
+    "    mpred=json.loads(MPRED_FILE.read_text(encoding='utf8'))\n",
+    "    print('✅ Predicciones Mask R-CNN anteriores reutilizadas:',len(mpred))\n",
+    "else:\n",
+    "    model=build_maskrcnn().to('cuda:0')\n",
+    "    state=torch.load(MASK_W,map_location='cpu',weights_only=False)\n",
+    "    model.load_state_dict(state['model'],strict=True)\n",
+    "    del state\n",
+    "    model.eval(); mpred=[]\n",
+    "    for i,p in enumerate(paths,start=1):\n",
+    "        with Image.open(p) as image:rgb=np.asarray(image.convert('RGB')).copy()\n",
+    "        h,w=rgb.shape[:2]\n",
+    "        with torch.inference_mode():ret=model([to_tensor(rgb).to('cuda:0')])[0]\n",
+    "        scores=ret['scores'].detach().cpu().numpy()\n",
+    "        if len(scores):\n",
+    "            masks=ret['masks'].detach().cpu().numpy()[:,0]\n",
+    "            assert masks.shape==(len(scores),h,w),f'Máscaras Mask R-CNN inesperadas: {masks.shape}'\n",
+    "            for s,m in zip(scores,masks):\n",
+    "                binary=(m>PROTO['mask_bin_thresh']).astype(np.uint8)\n",
+    "                if binary.any():mpred.append({'image_id':i,'category_id':1,\n",
+    "                    'segmentation':encoded(binary),'score':float(s)})\n",
+    "        if i%50==0:print('Mask R-CNN inferencia',i,'/',len(paths))\n",
+    "    MPRED_FILE.write_text(json.dumps(mpred,ensure_ascii=False),encoding='utf8')\n",
+    "    del model;torch.cuda.empty_cache()\n",
+    "print('✅ Mask R-CNN instancias predichas para COCO:',len(mpred))\n"
+   ],
+   "id": "YEd1E2ZlYe79"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "istOnyiYYe7-"
+   },
+   "source": [
+    "## 6. Evaluar ambos modelos con **el mismo COCOeval**, global y por fecha\n",
+    "\n",
+    "La métrica es AP de **máscaras**, no detección de cajas. Se mantienen iguales las categorías, los IDs de imágenes, el terreno de referencia, los umbrales IoU y `maxDets=100`. Los AP por fecha no son independientes de las métricas globales."
+   ],
+   "id": "istOnyiYYe7-"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/",
+     "height": 184
+    },
+    "id": "ZVQAuwlHYe7_"
+   },
+   "execution_count": null,
+   "outputs": [],
+   "source": [
+    "def as_coco_groundtruth(d):\n",
+    "    gt=COCO();gt.dataset=d\n",
+    "    with redirect_stdout(io.StringIO()):gt.createIndex()\n",
+    "    return gt\n",
+    "\n",
+    "def as_coco_predictions(gt,rows):\n",
+    "    # COCO.loadRes modifica las anotaciones recibidas: puede insertar 'bbox'\n",
+    "    # como np.ndarray. Las mismas filas se reutilizan en la evaluación por fecha.\n",
+    "    # Crear una copia limpia en cada llamada evita comparar dicho array con [].\n",
+    "    if rows:\n",
+    "        safe_rows=[\n",
+    "            {'image_id':int(r['image_id']),\n",
+    "             'category_id':int(r['category_id']),\n",
+    "             'segmentation':r['segmentation'],\n",
+    "             'score':float(r['score'])}\n",
+    "            for r in rows\n",
+    "        ]\n",
+    "        with redirect_stdout(io.StringIO()):\n",
+    "            return gt.loadRes(safe_rows)\n",
+    "    dt=COCO();dt.dataset={'images':gt.dataset['images'],'categories':gt.dataset['categories'],'annotations':[]}\n",
+    "    with redirect_stdout(io.StringIO()):dt.createIndex()\n",
+    "    return dt\n",
+    "\n",
+    "def compute_ap(gt,rows,img_ids=None):\n",
+    "    dt=as_coco_predictions(gt,rows)\n",
+    "    evaluator=COCOeval(gt,dt,'segm')\n",
+    "    evaluator.params.maxDets=[1,10,PROTO['max_dets']]\n",
+    "    if img_ids is not None:evaluator.params.imgIds=sorted(int(z) for z in img_ids)\n",
+    "    with redirect_stdout(io.StringIO()):\n",
+    "        evaluator.evaluate();evaluator.accumulate();evaluator.summarize()\n",
+    "    return {'mAP50_95_mascaras':float(evaluator.stats[0]),\n",
+    "            'mAP50_mascaras':float(evaluator.stats[1]),\n",
+    "            'mAP75_mascaras':float(evaluator.stats[2])}\n",
+    "\n",
+    "if REP_FILE.exists():\n",
+    "    report=json.loads(REP_FILE.read_text(encoding='utf8'))\n",
+    "    if report.get('protocolo')!=PROTO:raise RuntimeError('Reporte 09 existente tiene otro protocolo o pesos. No sobrescribir.')\n",
+    "    if not EXCEL.is_file():raise FileNotFoundError('Reporte armonizado existente sin Excel: revisar Drive antes de ejecutar.')\n",
+    "    print('✅ Evaluación 09 armonizada ya existe; NO se repite.');display(pd.DataFrame(report['global']))\n",
+    "else:\n",
+    "    gt=as_coco_groundtruth(gt_json)\n",
+    "    grouped={}\n",
+    "    for i,p in enumerate(paths,start=1):grouped.setdefault(p.name[:10],[]).append(i)\n",
+    "    global_rows=[];date_rows=[]\n",
+    "    for name,rows in [('YOLO11n-seg',ypred),('Mask R-CNN ResNet50-FPN',mpred)]:\n",
+    "        g=compute_ap(gt,rows)\n",
+    "        global_rows.append({'modelo':name,'n_imagenes':len(paths),'gt_instancias':len(gt_json['annotations']),**g})\n",
+    "        for dt,ids in sorted(grouped.items()):\n",
+    "            metrics=compute_ap(gt,rows,ids)\n",
+    "            date_rows.append({'modelo':name,'fecha':dt,'n_imagenes':len(ids),**metrics})\n",
+    "        print('✅ Evaluación armonizada:',name,g)\n",
+    "    df_g=pd.DataFrame(global_rows)\n",
+    "    df_d=pd.DataFrame(date_rows)\n",
+    "    dif={key:float(df_g.iloc[0][key]-df_g.iloc[1][key]) for key in ['mAP50_95_mascaras','mAP50_mascaras','mAP75_mascaras']}\n",
+    "    report={'etapa':'09_evaluacion_armonizada_sin_entrenamiento','fecha_utc':datetime.now(timezone.utc).isoformat(),\n",
+    "        'protocolo':PROTO,'global':global_rows,'por_fecha':date_rows,\n",
+    "        'diferencia_YOLO_menos_MaskRCNN':dif,\n",
+    "        'notas':['Se reevaluó el mismo test ya consultado en 04 y 07; no es un test externo nuevo.',\n",
+    "        'Evaluador armonizado pero persistente desigualdad de épocas, parámetros y costo de entrenamiento.',\n",
+    "        'Una fecha de captura no equivale a una granja o animal independiente.',\n",
+    "        'No se modificaron pesos ni umbrales para elegir el mejor modelo.']}\n",
+    "    with pd.ExcelWriter(EXCEL,engine='openpyxl') as w:\n",
+    "        df_g.to_excel(w,sheet_name='Global_COCO',index=False)\n",
+    "        df_d.to_excel(w,sheet_name='Por_Fecha_COCO',index=False)\n",
+    "        pd.DataFrame([PROTO]).to_excel(w,sheet_name='Protocolo',index=False)\n",
+    "        pd.DataFrame([{'limitacion':x} for x in report['notas']]).to_excel(w,sheet_name='Limitaciones',index=False)\n",
+    "    REP_FILE.write_text(json.dumps(report,indent=2,ensure_ascii=False),encoding='utf8')\n",
+    "    print('✅ Diferencias YOLO-Mask R-CNN:',dif)\n",
+    "    display(df_g)\n"
+   ],
+   "id": "ZVQAuwlHYe7_"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "jBSUQTIUYe7_"
+   },
+   "source": [
+    "## 7. Exportar ZIP completo para auditoría reproducible\n",
+    "\n",
+    "Se comprimen Excel, informes JSON, anotaciones y predicciones RLE. **No contiene los pesos de cientos de MB ni las imágenes originales.** Puedes enviarme este ZIP y procesar el resto en CPU."
+   ],
+   "id": "jBSUQTIUYe7_"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "id": "imb1QQIHYe7_",
+    "colab": {
+     "base_uri": "https://localhost:8080/",
+     "height": 54
+    }
+   },
+   "execution_count": null,
+   "outputs": [],
+   "source": [
+    "from google.colab import files\n",
+    "ZIP=EXPORT/'CERDOS_09_COCO_Armonizado_Resultados.zip'\n",
+    "files_to_zip=[EXCEL,REP_FILE,CONFIG_FILE,GT_FILE,YPRED_FILE,MPRED_FILE]\n",
+    "assert all(p.is_file() for p in files_to_zip),'Faltan archivos; no exportar resultados incompletos'\n",
+    "with zipfile.ZipFile(ZIP,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=6) as archive:\n",
+    "    for file in files_to_zip:archive.write(file,arcname=file.name)\n",
+    "with zipfile.ZipFile(ZIP) as archive:\n",
+    "    assert archive.testzip() is None,'ZIP corrupto'\n",
+    "print('✅ ZIP:',ZIP,'| MB:',round(ZIP.stat().st_size/1024**2,2))\n",
+    "files.download(str(ZIP))\n"
+   ],
+   "id": "imb1QQIHYe7_"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "v3TGVungYe8A"
+   },
+   "source": [
+    "**Siguiente:** ejecutar `10_CERDOS_Analisis_Fecha_Incertidumbre_CPU.ipynb` **sin acelerador**. No volver a entrenar modelos para esta comparación. Una evaluación externa verdaderamente independiente exigirá imágenes de otros días/granjas o nuevas secuencias no utilizadas."
+   ],
+   "id": "v3TGVungYe8A"
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "name": "python3",
+   "display_name": "Python 3"
+  },
+  "language_info": {
+   "name": "python"
+  },
+  "colab": {
+   "provenance": [],
+   "gpuType": "T4"
+  },
+  "accelerator": "GPU"
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}

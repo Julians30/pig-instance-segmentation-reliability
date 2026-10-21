@@ -1,0 +1,238 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "fHbcKYHzfCPA"
+   },
+   "source": [
+    "# 🐖 10 | Comparación armonizada, variación entre fechas e incertidumbre\n",
+    "\n",
+    "**RECURSO: CPU (sin acelerador)**. No hace entrenamiento ni predicciones. Lee **los resultados COCOeval armonizados** del Notebook 09, estudia variaciones entre fechas, genera gráficas y Excel, y exporta un ZIP.\n",
+    "\n",
+    "> **Advertencia:** solo hay **cinco fechas de test**. Las bandas bootstrap que calcularemos corresponden a la **media no ponderada de diferencias de AP entre fechas**, NO a un intervalo de confianza del mAP COCO global. La incertidumbre estimada será exploratoria e inestable por el pequeño número de fechas."
+   ],
+   "id": "fHbcKYHzfCPA"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "id": "JdZVxA54fCPC"
+   },
+   "execution_count": null,
+   "outputs": [],
+   "source": [
+    "%pip -q install \"pandas>=2,<3\" numpy openpyxl matplotlib\n"
+   ],
+   "id": "JdZVxA54fCPC"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/",
+     "height": 147
+    },
+    "id": "RW2I8v_1fCPE"
+   },
+   "execution_count": null,
+   "outputs": [],
+   "source": [
+    "from google.colab import drive\n",
+    "from pathlib import Path\n",
+    "from datetime import datetime,timezone\n",
+    "import json,zipfile,hashlib\n",
+    "import pandas as pd,numpy as np,matplotlib.pyplot as plt\n",
+    "\n",
+    "drive.mount('/content/drive')\n",
+    "ROOT=Path('/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖')\n",
+    "assert ROOT.is_dir(),'Carpeta del proyecto no encontrada. Comprueba la cuenta.'\n",
+    "RES=ROOT/'03_Resultados'\n",
+    "EXPORT=ROOT/'05_Exportaciones_ZIP'\n",
+    "REPORT=RES/'05_Reportes'/'CERDOS_09_Armonizacion_COCO.json'\n",
+    "EXCEL_09=RES/'03_Metricas'/'CERDOS_09_Comparacion_Armonizada_COCO.xlsx'\n",
+    "assert REPORT.exists() and EXCEL_09.exists(),'Completa primero el Notebook 09 con GPU T4.'\n",
+    "rep=json.loads(REPORT.read_text(encoding='utf8'))\n",
+    "assert rep.get('etapa')=='09_evaluacion_armonizada_sin_entrenamiento','Reporte 09 inesperado'\n",
+    "G=pd.DataFrame(rep['global']);D=pd.DataFrame(rep['por_fecha'])\n",
+    "assert len(G)==2 and len(D)==10 and D['fecha'].nunique()==5,'Reporte incompleto'\n",
+    "assert set(D.groupby('modelo')['fecha'].nunique())=={5},'Fechas de evaluación no coinciden'\n",
+    "print('✅ Comparación armonizada disponible:')\n",
+    "display(G)\n"
+   ],
+   "id": "RW2I8v_1fCPE"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "gn9InPKDfCPG"
+   },
+   "source": [
+    "## 2. Comparación apareada de AP por fecha\n",
+    "\n",
+    "La **unidad de remuestreo es la fecha completa**. Esto reduce el riesgo de tratar imágenes del mismo día como independientes, pero con cinco unidades no permite conclusiones definitivas."
+   ],
+   "id": "gn9InPKDfCPG"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/",
+     "height": 857
+    },
+    "id": "VIMZAYzHfCPG"
+   },
+   "execution_count": null,
+   "outputs": [],
+   "source": [
+    "METRICAS=['mAP50_95_mascaras','mAP50_mascaras','mAP75_mascaras']\n",
+    "Y='YOLO11n-seg';M='Mask R-CNN ResNet50-FPN'\n",
+    "P=D.pivot(index='fecha',columns='modelo',values=METRICAS)\n",
+    "assert not P.isna().any().any(),'Faltan mediciones para algún modelo o fecha'\n",
+    "rows=[];bootrows=[]\n",
+    "rg=np.random.default_rng(2026)\n",
+    "for metric in METRICAS:\n",
+    "    diff=(P[(metric,Y)]-P[(metric,M)]).to_numpy(dtype=float)\n",
+    "    dates=P.index.to_list()\n",
+    "    for date,val in zip(dates,diff):\n",
+    "        rows.append({'fecha':date,'metrica':metric,'YOLO11n_seg':float(P.loc[date,(metric,Y)]),\n",
+    "            'MaskRCNN':float(P.loc[date,(metric,M)]),'delta_YOLO_menos_MaskRCNN':float(val)})\n",
+    "    samples=rg.choice(diff,size=(10000,len(diff)),replace=True).mean(axis=1)\n",
+    "    lo,hi=np.quantile(samples,[.025,.975])\n",
+    "    g0=float(G.loc[G.modelo.eq(Y),metric].iloc[0]);g1=float(G.loc[G.modelo.eq(M),metric].iloc[0])\n",
+    "    bootrows.append({'metrica':metric,'n_fechas':len(diff),'delta_mAP_global_COCO':g0-g1,\n",
+    "        'media_no_ponderada_deltas_por_fecha':float(diff.mean()),\n",
+    "        'IC_exploratorio_2_5pct_media_fecha':float(lo),\n",
+    "        'IC_exploratorio_97_5pct_media_fecha':float(hi),\n",
+    "        'n_bootstrap':10000,'semilla':2026,'alcance_IC':'NO es IC del mAP global; 5 fechas'})\n",
+    "DIFF=pd.DataFrame(rows);BOOT=pd.DataFrame(bootrows)\n",
+    "print('✅ Diferencias por fecha:');display(DIFF)\n",
+    "print('✅ Bootstrap exploratorio agrupado por fecha:');display(BOOT)\n"
+   ],
+   "id": "VIMZAYzHfCPG"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "V2A4XUkTfCPH"
+   },
+   "source": [
+    "## 3. Gráficos y Excel verificable\n",
+    "\n",
+    "Diferencias positivas indican mayor AP de YOLO en esa fecha, bajo COCOeval. Las figuras y tablas no son evidencia de generalización a otras granjas."
+   ],
+   "id": "V2A4XUkTfCPH"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/",
+     "height": 629
+    },
+    "id": "yUvvhj32fCPI"
+   },
+   "execution_count": null,
+   "outputs": [],
+   "source": [
+    "EXCEL=RES/'03_Metricas'/'CERDOS_10_Analisis_Armonizado_Fecha.xlsx'\n",
+    "FIG=RES/'04_Figuras'/'CERDOS_10_Diferencia_AP_por_Fecha.png'\n",
+    "JREPORT=RES/'05_Reportes'/'CERDOS_10_Analisis_Incertidumbre.json'\n",
+    "for f in [EXCEL,FIG,JREPORT]:f.parent.mkdir(parents=True,exist_ok=True)\n",
+    "with pd.ExcelWriter(EXCEL,engine='openpyxl') as x:\n",
+    "    G.to_excel(x,sheet_name='COCO_global',index=False)\n",
+    "    D.to_excel(x,sheet_name='COCO_por_fecha',index=False)\n",
+    "    DIFF.to_excel(x,sheet_name='Deltas_pareados',index=False)\n",
+    "    BOOT.to_excel(x,sheet_name='Bootstrap_fechas',index=False)\n",
+    "    pd.DataFrame({'advertencias':[\n",
+    "        'El test ya fue consultado en 04/07: no es una nueva evaluación externa.',\n",
+    "        'COCOeval común armoniza evaluador y GT, no el presupuesto de entrenamiento.',\n",
+    "        'Solo cinco fechas de test; los intervalos bootstrap son exploratorios.',\n",
+    "        'El IC estimado corresponde a la media de AP por fecha, NO a mAP global.',\n",
+    "        'No inferir animales únicos, comportamiento ni transferencia entre granjas.',\n",
+    "        'Las comparaciones por test no deben usarse para seleccionar hiperparámetros.']}).to_excel(x,sheet_name='Interpretacion',index=False)\n",
+    "\n",
+    "main=DIFF.loc[DIFF.metrica.eq('mAP50_95_mascaras')].sort_values('fecha')\n",
+    "fig,ax=plt.subplots(figsize=(10,5.5))\n",
+    "ax.bar(main['fecha'],main['delta_YOLO_menos_MaskRCNN']*100)\n",
+    "ax.axhline(0,color='black',linewidth=1)\n",
+    "ax.set(ylabel='Diferencia de AP@50:95 en puntos porcentuales',xlabel='Fecha de captura',\n",
+    "       title='FaroPigSeg · Diferencia YOLO − Mask R-CNN por fecha · COCOeval')\n",
+    "ax.tick_params(axis='x',rotation=25)\n",
+    "fig.tight_layout();fig.savefig(FIG,dpi=200,bbox_inches='tight');plt.show();plt.close(fig)\n",
+    "notes=['Se comparte evaluador COCOeval y GT; NO se igualan épocas/arquitectura/hardware.',\n",
+    "       'El test no es nuevo. Las métricas globales ya fueron vistas en ensayos anteriores.',\n",
+    "       'La dispersión entre cinco fechas solo aporta evidencia exploratoria.',\n",
+    "       'El bootstrap reporta la media de diferencias entre fechas, no el mAP global.']\n",
+    "record={'fecha_utc':datetime.now(timezone.utc).isoformat(),'etapa':'10_analisis_fechas_CPU',\n",
+    "    'n_fechas':5,'n_imagenes':373,'tabla_bootstrap':BOOT.to_dict('records'),\n",
+    "    'advertencias':notes,'origen_report_09':str(REPORT)}\n",
+    "JREPORT.write_text(json.dumps(record,ensure_ascii=False,indent=2),encoding='utf8')\n",
+    "print('✅ Excel:',EXCEL,chr(10),'✅ Figura:',FIG,chr(10),'✅ Informe:',JREPORT)\n"
+   ],
+   "id": "yUvvhj32fCPI"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "JfY9w2WtfCPI"
+   },
+   "source": [
+    "## 4. Exportar ZIP de resultados (sin dataset y sin pesos)"
+   ],
+   "id": "JfY9w2WtfCPI"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/",
+     "height": 54
+    },
+    "id": "CRMM0OxTfCPJ"
+   },
+   "execution_count": null,
+   "outputs": [],
+   "source": [
+    "from google.colab import files\n",
+    "EXPORT.mkdir(exist_ok=True,parents=True)\n",
+    "ZIP=EXPORT/'CERDOS_10_Analisis_Comparativo_Incertidumbre.zip'\n",
+    "with zipfile.ZipFile(ZIP,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=6) as z:\n",
+    "    for f in [EXCEL,FIG,JREPORT]:\n",
+    "        assert f.is_file();z.write(f,arcname=f.name)\n",
+    "with zipfile.ZipFile(ZIP) as z:assert z.testzip() is None,'ZIP corrupto'\n",
+    "print('✅ ZIP guardado en Drive:',ZIP)\n",
+    "files.download(str(ZIP))\n"
+   ],
+   "id": "CRMM0OxTfCPJ"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "21iP4pbgfCPK"
+   },
+   "source": [
+    "### Próxima etapa editorial\n",
+    "\n",
+    "Solo después de revisar el ZIP 09 y 10: definir una comparación de presupuestos de entrenamiento, robustez a oclusiones, nuevas semillas y una muestra verdaderamente independiente de otra granja o sesión. **FaroPigSeg es imagen estática y no permite inferir identidades ni estabilidad temporal.** Para seguimiento de cerdos se requerirá una base de **videos** con anotaciones de individuos."
+   ],
+   "id": "21iP4pbgfCPK"
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "name": "python3",
+   "display_name": "Python 3",
+   "language": "python"
+  },
+  "language_info": {
+   "name": "python"
+  },
+  "colab": {
+   "provenance": []
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}

@@ -1,0 +1,494 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "riMMihBUjAqV"
+   },
+   "source": [
+    "# 🐖 11 | Confiabilidad geométrica, detección y contexto de solapamiento\n",
+    "\n",
+    "**RECURSO: CPU (sin GPU).** Este notebook NO entrena ni hace inferencia: utiliza los JSON de máscaras COCO del **Notebook 09**, evaluados ya con un test congelado por fecha. Mantiene las máscaras de referencia, los modelos, sus pesos y la configuración originales.\n",
+    "\n",
+    "**Preguntas:** ¿Qué tan fiables son el área, el contorno y la localización geométrica de las máscaras correctamente emparejadas? ¿Qué errores de conteo y detección aparecen? ¿Cómo varían entre fechas y en escenas congestionadas?\n",
+    "\n",
+    "**Criterios:** emparejamiento voraz por confianza, un GT por detección; IoU de máscara ≥ **0,50**, confianza ≥ **0,25** (umbral fijo descriptivo; *no es COCO AP*). El F1 de contornos usa **2 píxeles** de tolerancia. La superposición de **cajas de referencia** es solo un *proxy de congestión espacial*, **NO una etiqueta validada de oclusión real**. Sin calibración, no se expresan medidas en cm.\n",
+    "\n",
+    "**Salidas:** Excel detallado (por instancia, imagen y fecha), figuras, reporte JSON, puntos de control de avance y un ZIP pequeño para adjuntar en ChatGPT. Si se interrumpe, permite continuar imagen por imagen.\n",
+    "**Corrección de recuperación:** en el resumen se cambió el acceso a la columna `gt` a `g['gt']` para evitar conflicto con el método `DataFrame.gt`. Los puntos de control (`checkpoint_*.jsonl`) existentes se reutilizan: no se recalculan imágenes ya completadas.\n"
+   ],
+   "id": "riMMihBUjAqV"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "FuaqBWtLjAqX"
+   },
+   "source": [
+    "## 1. Dependencias y montaje de Drive (CPU)\n",
+    " Instala bibliotecas ligeras. **No selecciones GPU** en Colab para esta etapa."
+   ],
+   "id": "FuaqBWtLjAqX"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "id": "U9J62PLFjAqZ"
+   },
+   "execution_count": null,
+   "outputs": [],
+   "source": [
+    "%pip -q install \"pycocotools>=2.0.8,<3\" \"numpy>=1.24,<3\" \"pandas>=2,<3\" openpyxl opencv-python-headless matplotlib\n"
+   ],
+   "id": "U9J62PLFjAqZ"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "dobj4TUVjAqa"
+   },
+   "execution_count": null,
+   "outputs": [],
+   "source": [
+    "from google.colab import drive\n",
+    "from pathlib import Path\n",
+    "from datetime import datetime,timezone\n",
+    "from collections import defaultdict\n",
+    "import hashlib, json, zipfile, platform, sys\n",
+    "import numpy as np, pandas as pd, cv2\n",
+    "import matplotlib.pyplot as plt\n",
+    "from pycocotools import mask as maskutils\n",
+    "\n",
+    "drive.mount('/content/drive')\n",
+    "ROOT=Path('/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖')\n",
+    "RES=ROOT/'03_Resultados'; EXPORT=ROOT/'05_Exportaciones_ZIP'\n",
+    "REPORTS=RES/'05_Reportes'; METRICS=RES/'03_Metricas'; FIGURES=RES/'04_Figuras'\n",
+    "CACHE09=REPORTS/'CERDOS_09_COCO_Armonizado'\n",
+    "GT_PATH=CACHE09/'CERDOS_09_GT_test_coco.json'\n",
+    "PREDS={'YOLO11n-seg':CACHE09/'CERDOS_09_Pred_YOLO_coco.json',\n",
+    "       'Mask R-CNN ResNet50-FPN':CACHE09/'CERDOS_09_Pred_MaskRCNN_coco.json'}\n",
+    "PROTO09_PATH=CACHE09/'CERDOS_09_Protocolo.json'\n",
+    "REPORT09_PATH=REPORTS/'CERDOS_09_Armonizacion_COCO.json'\n",
+    "for p in [GT_PATH,*PREDS.values(),PROTO09_PATH,REPORT09_PATH]:\n",
+    "    if not p.is_file(): raise FileNotFoundError(f'Falta artefacto del notebook 09: {p}')\n",
+    "for p in [METRICS,FIGURES,REPORTS,EXPORT]:p.mkdir(exist_ok=True,parents=True)\n",
+    "def sha256_file(p):\n",
+    "    h=hashlib.sha256()\n",
+    "    with p.open('rb') as fp:\n",
+    "        for chunk in iter(lambda: fp.read(4*1024*1024),b''):h.update(chunk)\n",
+    "    return h.hexdigest()\n",
+    "\n",
+    "gt=json.loads(GT_PATH.read_text(encoding='utf-8'))\n",
+    "p09=json.loads(PROTO09_PATH.read_text(encoding='utf-8'))\n",
+    "r09=json.loads(REPORT09_PATH.read_text(encoding='utf-8'))\n",
+    "assert r09.get('protocolo')==p09,'Protocolo 09 y reporte 09 no coinciden'\n",
+    "assert len(gt['images'])==373 and len(gt['annotations'])==4648,'Referencia GT inesperada'\n",
+    "assert len({str(i['file_name'])[:10] for i in gt['images']})==5,'Fechas de prueba inesperadas'\n",
+    "predictions={name:json.loads(p.read_text(encoding='utf-8')) for name,p in PREDS.items()}\n",
+    "image_ids={int(i['id']) for i in gt['images']}\n",
+    "assert all(set(int(a['image_id']) for a in rows)<=image_ids for rows in predictions.values())\n",
+    "print('✅ CPU | 373 imágenes de prueba | 4648 instancias de referencia | 5 fechas')\n",
+    "print('✅ Predicciones reutilizadas:',{k:len(v) for k,v in predictions.items()})\n"
+   ],
+   "id": "dobj4TUVjAqa"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "Ebbzl9UajAqb"
+   },
+   "source": [
+    "## 2. Protocolo fijo, comprobación de integridad y reanudación\n",
+    " Los puntos de control se almacenan **por imagen completa**, para no perder trabajo si se corta Colab. Si cambian las predicciones o el protocolo, el notebook se detendrá antes de mezclar resultados."
+   ],
+   "id": "Ebbzl9UajAqb"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "Okv_g4yzjAqb"
+   },
+   "execution_count": null,
+   "outputs": [],
+   "source": [
+    "EXP_DIR=REPORTS/'CERDOS_11_Geometria'\n",
+    "EXP_DIR.mkdir(parents=True,exist_ok=True)\n",
+    "PROTO_PATH=EXP_DIR/'CERDOS_11_Protocolo.json'\n",
+    "OUTPUT_XLSX=METRICS/'CERDOS_11_Confiabilidad_Geometrica.xlsx'\n",
+    "OUTPUT_FIG=FIGURES/'CERDOS_11_Geometria_Comparada.png'\n",
+    "OUTPUT_JSON=REPORTS/'CERDOS_11_Confiabilidad_Geometrica.json'\n",
+    "MODEL_KEYS={'YOLO11n-seg':'YOLO','Mask R-CNN ResNet50-FPN':'MaskRCNN'}\n",
+    "PROTO={\n",
+    "    'pipeline':'CERDOS_11_geometria_v1',\n",
+    "    'fuente':'Predicciones y GT COCO del notebook 09, test original ya evaluado',\n",
+    "    'img_count':373,'gt_count':4648,'score_min':0.25,'mask_iou_min':0.50,\n",
+    "    'boundary_tolerance_px':2,'gt_bbox_overlap_iou_proxy':0.10,\n",
+    "    'match':'predicciones por score descendente, emparejamiento voraz uno a uno por IoU',\n",
+    "    'hash_proto09':sha256_file(PROTO09_PATH),'hash_gt':sha256_file(GT_PATH),\n",
+    "    'hash_pred_yolo':sha256_file(PREDS['YOLO11n-seg']),\n",
+    "    'hash_pred_maskrcnn':sha256_file(PREDS['Mask R-CNN ResNet50-FPN']),\n",
+    "}\n",
+    "if PROTO_PATH.exists():\n",
+    "    if json.loads(PROTO_PATH.read_text(encoding='utf-8'))!=PROTO:\n",
+    "        raise RuntimeError('Hay un análisis 11 anterior con archivos o parámetros diferentes. NO mezclar.')\n",
+    "else:\n",
+    "    if OUTPUT_XLSX.exists() or OUTPUT_JSON.exists() or any(EXP_DIR.glob('checkpoint_*.jsonl')):\n",
+    "        raise RuntimeError('Hay resultados 11 anteriores sin protocolo. Revisa Drive antes de continuar.')\n",
+    "    PROTO_PATH.write_text(json.dumps(PROTO,indent=2,ensure_ascii=False),encoding='utf-8')\n",
+    "\n",
+    "gt_by_img=defaultdict(list)\n",
+    "for a in gt['annotations']:gt_by_img[int(a['image_id'])].append(a)\n",
+    "pred_by_img={}\n",
+    "for model,rows in predictions.items():\n",
+    "    p=defaultdict(list)\n",
+    "    for r in rows:\n",
+    "        if float(r['score'])>=PROTO['score_min']:p[int(r['image_id'])].append(r)\n",
+    "    pred_by_img[model]=p\n",
+    "images=sorted(gt['images'],key=lambda x:int(x['id']))\n",
+    "assert len({i['id'] for i in images})==373\n",
+    "print('✅ Archivos y parámetros fijados. Nunca se modifican predicciones originales.')\n"
+   ],
+   "id": "Okv_g4yzjAqb"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "Xk05TZwZjAqc"
+   },
+   "source": [
+    "## 3. Métricas geométricas y emparejamiento de instancias\n",
+    " Solo calculamos Dice, IoU, área, distancia entre centroides y boundary-F1 para pares emparejados. Las detecciones sin par son falsos positivos; referencias sin par, falsos negativos. Estos valores descriptivos **no sustituyen** el AP de COCOeval del Notebook 09."
+   ],
+   "id": "Xk05TZwZjAqc"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "I9M4fuJijAqd"
+   },
+   "execution_count": null,
+   "outputs": [],
+   "source": [
+    "def bbox_iou(b1,b2):\n",
+    "    x1=max(b1[0],b2[0]);y1=max(b1[1],b2[1])\n",
+    "    x2=min(b1[0]+b1[2],b2[0]+b2[2])\n",
+    "    y2=min(b1[1]+b1[3],b2[1]+b2[3])\n",
+    "    inter=max(0.,x2-x1)*max(0.,y2-y1)\n",
+    "    a1=max(0.,b1[2])*max(0.,b1[3]);a2=max(0.,b2[2])*max(0.,b2[3])\n",
+    "    return float(inter/(a1+a2-inter)) if a1+a2-inter>0 else 0.\n",
+    "\n",
+    "def crowded_gt_flags(anns):\n",
+    "    out=[]\n",
+    "    for i,a in enumerate(anns):\n",
+    "        overlap=max((bbox_iou(a['bbox'],b['bbox']) for j,b in enumerate(anns) if j!=i),default=0.)\n",
+    "        out.append(overlap)\n",
+    "    return out\n",
+    "\n",
+    "KERNEL=np.ones((3,3),np.uint8)\n",
+    "def boundary_f1(mask_a,mask_b,tol=2):\n",
+    "    # Gradiente morfológico y tolerancia simétrica de 2 píxeles.\n",
+    "    a=(mask_a>0).astype(np.uint8)\n",
+    "    b=(mask_b>0).astype(np.uint8)\n",
+    "    ea=cv2.morphologyEx(a,cv2.MORPH_GRADIENT,KERNEL)>0\n",
+    "    eb=cv2.morphologyEx(b,cv2.MORPH_GRADIENT,KERNEL)>0\n",
+    "    na=int(ea.sum());nb=int(eb.sum())\n",
+    "    if na==0 or nb==0:return np.nan\n",
+    "    db=cv2.dilate(eb.astype(np.uint8),cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(2*tol+1,2*tol+1)))>0\n",
+    "    da=cv2.dilate(ea.astype(np.uint8),cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(2*tol+1,2*tol+1)))>0\n",
+    "    precision=float(np.logical_and(ea,db).sum()/na)\n",
+    "    recall=float(np.logical_and(eb,da).sum()/nb)\n",
+    "    return 2*precision*recall/(precision+recall) if (precision+recall)>0 else 0.\n",
+    "\n",
+    "def mask_geometry(gt_rle,pred_rle,shape):\n",
+    "    gr=maskutils.decode(gt_rle)>0\n",
+    "    pr=maskutils.decode(pred_rle)>0\n",
+    "    assert gr.shape==shape and pr.shape==shape,'Máscaras COCO con dimensiones inesperadas'\n",
+    "    ag=int(np.count_nonzero(gr));ap=int(np.count_nonzero(pr))\n",
+    "    inter=int(np.logical_and(gr,pr).sum())\n",
+    "    union=ag+ap-inter\n",
+    "    yg,xg=np.nonzero(gr);yp,xp=np.nonzero(pr)\n",
+    "    center=float(np.hypot(xg.mean()-xp.mean(),yg.mean()-yp.mean())) if ag and ap else np.nan\n",
+    "    return dict(mask_iou=float(inter/union) if union else np.nan,\n",
+    "                dice=float(2*inter/(ag+ap)) if ag+ap else np.nan,\n",
+    "                gt_area_px2=ag,pred_area_px2=ap,\n",
+    "                error_area_firmado_pct=float(100*(ap-ag)/ag) if ag else np.nan,\n",
+    "                error_area_abs_pct=float(100*abs(ap-ag)/ag) if ag else np.nan,\n",
+    "                error_centroide_px=center,\n",
+    "                error_centroide_pct_diagonal=float(100*center/np.hypot(*shape)) if np.isfinite(center) else np.nan,\n",
+    "                boundary_f1_2px=boundary_f1(gr,pr,PROTO['boundary_tolerance_px']))\n",
+    "\n",
+    "def inspect_image(info, model):\n",
+    "    image_id=int(info['id']);w=int(info['width']);h=int(info['height']);date=str(info['file_name'])[:10]\n",
+    "    original=gt_by_img[image_id];scored=sorted(pred_by_img[model].get(image_id,[]),key=lambda a:float(a['score']),reverse=True)\n",
+    "    overlaps=crowded_gt_flags(original)\n",
+    "    n=len(original);m=len(scored)\n",
+    "    if n and m:\n",
+    "        matrix=np.asarray(maskutils.iou([p['segmentation'] for p in scored],\n",
+    "                                       [g['segmentation'] for g in original],[0]*n),dtype=float)\n",
+    "        assert matrix.shape==(m,n)\n",
+    "    else:matrix=np.zeros((m,n),float)\n",
+    "    gt_used=set();pred_used=set();pairs=[]\n",
+    "    for pi,pred in enumerate(scored):\n",
+    "        options=[gi for gi in range(n) if gi not in gt_used]\n",
+    "        if not options:break\n",
+    "        chosen=max(options,key=lambda gi:matrix[pi,gi])\n",
+    "        if matrix[pi,chosen] < PROTO['mask_iou_min']:continue\n",
+    "        gt_used.add(chosen);pred_used.add(pi)\n",
+    "        ann=original[chosen]\n",
+    "        geom=mask_geometry(ann['segmentation'],pred['segmentation'],(h,w))\n",
+    "        pairs.append({'modelo':model,'fecha':date,'image_id':image_id,\n",
+    "                      'imagen':str(info['file_name']),'gt_annotation_id':int(ann['id']),\n",
+    "                      'confianza_pred':float(pred['score']),\n",
+    "                      'solapamiento_max_bbox_gt':overlaps[chosen],\n",
+    "                      'proxy_bbox_congestionado':overlaps[chosen]>=PROTO['gt_bbox_overlap_iou_proxy'],\n",
+    "                      **geom})\n",
+    "    tp=len(pairs);fp=m-tp;fn=n-tp\n",
+    "    return {'img':{'modelo':model,'fecha':date,'image_id':image_id,'imagen':str(info['file_name']),\n",
+    "                   'gt':n,'pred_umbral':m,'TP':tp,'FP':fp,'FN':fn,\n",
+    "                   'precision':tp/(tp+fp) if tp+fp else np.nan,\n",
+    "                   'recall':tp/(tp+fn) if tp+fn else np.nan,\n",
+    "                   'error_conteo_firmado':m-n,'error_conteo_absoluto':abs(m-n),\n",
+    "                   'gt_bbox_congestionados':int(sum(x>=PROTO['gt_bbox_overlap_iou_proxy'] for x in overlaps)),\n",
+    "                   'gt_bbox_solapamiento_medio':float(np.mean(overlaps)) if overlaps else 0.},\n",
+    "            'pairs':pairs}\n",
+    "print('✅ Definidas las métricas; ninguna usa centímetros, identidades ni etiquetas reales de oclusión.')\n"
+   ],
+   "id": "I9M4fuJijAqd"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "LCg_CxMMjAqf"
+   },
+   "source": [
+    "## 4. Procesar y guardar progresivamente los 373 casos por modelo\n",
+    " Cada imagen terminada se escribe en un archivo de reanudación. Una segunda ejecución omite las imágenes que ya están completas."
+   ],
+   "id": "LCg_CxMMjAqf"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "K_DmifrJjAqf"
+   },
+   "execution_count": null,
+   "outputs": [],
+   "source": [
+    "def previous_rows(file):\n",
+    "    records={}\n",
+    "    if not file.exists():return records\n",
+    "    for line_number,line in enumerate(file.read_text(encoding='utf-8').splitlines(),start=1):\n",
+    "        if not line.strip():continue\n",
+    "        try:obj=json.loads(line)\n",
+    "        except json.JSONDecodeError:\n",
+    "            raise RuntimeError(f'Checkpoint {file.name} dañado en línea {line_number}; revisar antes de continuar.')\n",
+    "        image_id=int(obj['img']['image_id'])\n",
+    "        if image_id in records:raise RuntimeError(f'Checkpoint duplicado: {file.name}, id {image_id}')\n",
+    "        records[image_id]=obj\n",
+    "    return records\n",
+    "\n",
+    "completed={}\n",
+    "for model,key in MODEL_KEYS.items():\n",
+    "    file=EXP_DIR/f'checkpoint_{key}.jsonl'\n",
+    "    recorded=previous_rows(file)\n",
+    "    if any(i not in {int(z['id']) for z in images} for i in recorded):raise RuntimeError('Checkpoint con imágenes desconocidas')\n",
+    "    todo=[img for img in images if int(img['id']) not in recorded]\n",
+    "    print(f'➜ {model}: {len(recorded)} imágenes ya hechas; {len(todo)} pendientes')\n",
+    "    with file.open('a',encoding='utf-8') as handle:\n",
+    "        for counter,info in enumerate(todo,start=1):\n",
+    "            result=inspect_image(info,model)\n",
+    "            handle.write(json.dumps(result,ensure_ascii=False,allow_nan=True)+'\\n')\n",
+    "            handle.flush()\n",
+    "            recorded[int(info['id'])]=result\n",
+    "            if counter%25==0 or counter==len(todo):\n",
+    "                print(f'   {model}: procesadas {len(recorded)}/{len(images)} imágenes')\n",
+    "    assert len(recorded)==373\n",
+    "    completed[model]=recorded\n",
+    "print('✅ Geometría evaluada. Si vuelve a ejecutar, se reutilizarán estos resultados.')\n"
+   ],
+   "id": "K_DmifrJjAqf"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "pJ8MvDndjAqg"
+   },
+   "source": [
+    "## 5. Resultados, análisis de congestión espacial y archivos Excel\n",
+    " Se informan promedios geométricos **solo entre máscaras emparejadas**, tasas TP/FP/FN entre todas las máscaras y diferencias de área y conteo por imagen. No se infiere oclusión verdadera desde solapamiento de cajas."
+   ],
+   "id": "pJ8MvDndjAqg"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/",
+     "height": 462
+    },
+    "id": "43nZtT4-jAqg"
+   },
+   "execution_count": null,
+   "outputs": [],
+   "source": [
+    "image_rows=[r['img'] for model in MODEL_KEYS for r in completed[model].values()]\n",
+    "paired_rows=[p for model in MODEL_KEYS for r in completed[model].values() for p in r['pairs']]\n",
+    "df_img=pd.DataFrame(image_rows).sort_values(['modelo','image_id']).reset_index(drop=True)\n",
+    "df_pair=pd.DataFrame(paired_rows).sort_values(['modelo','image_id','gt_annotation_id']).reset_index(drop=True)\n",
+    "assert len(df_img)==746 and set(df_img.modelo)==set(MODEL_KEYS)\n",
+    "assert len(df_pair)>0,'No hay pares de máscaras; revisar umbrales'\n",
+    "\n",
+    "summary=[]\n",
+    "for model,g in df_img.groupby('modelo'):\n",
+    "    part=df_pair[df_pair['modelo']==model]\n",
+    "    tp=int(g.TP.sum());fp=int(g.FP.sum());fn=int(g.FN.sum())\n",
+    "    assert tp+fn==4648,'TP + FN no concuerda con las etiquetas de referencia'\n",
+    "    summary.append({'modelo':model,'imagenes':int(len(g)),'GT_total':int(g['gt'].sum()),\n",
+    "                   'pred_total_conf_025':int(g.pred_umbral.sum()),\n",
+    "                   'TP_iou_050':tp,'FP_iou_050':fp,'FN_iou_050':fn,\n",
+    "                   'precision_micro':tp/(tp+fp) if tp+fp else np.nan,\n",
+    "                   'recall_micro':tp/(tp+fn) if tp+fn else np.nan,\n",
+    "                   'MAE_conteo_imagen':float(g.error_conteo_absoluto.mean()),\n",
+    "                   'IoU_media_matches':float(part.mask_iou.mean()),\n",
+    "                   'Dice_media_matches':float(part.dice.mean()),\n",
+    "                   'error_area_abs_pct_medio_matches':float(part.error_area_abs_pct.mean()),\n",
+    "                   'boundary_F1_2px_medio_matches':float(part.boundary_f1_2px.mean())})\n",
+    "df_summary=pd.DataFrame(summary)\n",
+    "df_date=(df_img.groupby(['modelo','fecha'],as_index=False)\n",
+    "         .agg(imagenes=('image_id','size'),GT=('gt','sum'),TP=('TP','sum'),FP=('FP','sum'),FN=('FN','sum'),\n",
+    "              MAE_conteo=('error_conteo_absoluto','mean')))\n",
+    "df_date['precision_micro']=df_date.TP/(df_date.TP+df_date.FP).replace(0,np.nan)\n",
+    "df_date['recall_micro']=df_date.TP/(df_date.TP+df_date.FN).replace(0,np.nan)\n",
+    "df_cong=(df_pair.groupby(['modelo','proxy_bbox_congestionado'],as_index=False)\n",
+    "         .agg(pares=('image_id','size'),IoU_media=('mask_iou','mean'),\n",
+    "              Dice_media=('dice','mean'),error_area_abs_pct=('error_area_abs_pct','mean'),\n",
+    "              contorno_F1_2px=('boundary_f1_2px','mean')))\n",
+    "\n",
+    "limitations=[\n",
+    "  'Las métricas geométricas describen pares emparejados; no representan errores de objetos no detectados.',\n",
+    "  'Emparejamiento por confianza>=0.25 e IoU>=0.50: TP/FP/FN descriptivos, no COCO AP.',\n",
+    "  'Oclusión real NO etiquetada: solapamiento IoU de cajas GT >=0.10 solo sirve como proxy de congestión.',\n",
+    "  'La métrica contorno F1 usa tolerancia fija de 2 píxeles; depende de resolución.',\n",
+    "  'Áreas en px², sin calibración métrica; no se estima peso corporal ni tamaño en centímetros.',\n",
+    "  'Test consultado en notebooks 04,07,09: no es evaluación externa nueva ni validación entre granjas.',\n",
+    "  'La comparación refleja dos presupuestos de entrenamiento desiguales (YOLO 60 y Mask R-CNN 12 épocas).',\n",
+    "]\n",
+    "with pd.ExcelWriter(OUTPUT_XLSX,engine='openpyxl') as writer:\n",
+    "    df_summary.to_excel(writer,'Resumen',index=False)\n",
+    "    df_date.to_excel(writer,'Por_Fecha',index=False)\n",
+    "    df_img.to_excel(writer,'Por_Imagen',index=False)\n",
+    "    df_pair.to_excel(writer,'Pares_Geometricos',index=False)\n",
+    "    df_cong.to_excel(writer,'Proxy_Congestion',index=False)\n",
+    "    pd.DataFrame([PROTO]).to_excel(writer,'Protocolo',index=False)\n",
+    "    pd.DataFrame({'limitaciones':limitations}).to_excel(writer,'Limitaciones',index=False)\n",
+    "print('✅ Excel geométrico:',OUTPUT_XLSX)\n",
+    "display(df_summary)\n"
+   ],
+   "id": "43nZtT4-jAqg"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "id": "-d8Y-YqEjAqh",
+    "colab": {
+     "base_uri": "https://localhost:8080/",
+     "height": 445
+    }
+   },
+   "execution_count": null,
+   "outputs": [],
+   "source": [
+    "fig,axs=plt.subplots(1,2,figsize=(13,4.7))\n",
+    "names=df_summary['modelo'].tolist()\n",
+    "axs[0].bar(names,df_summary['IoU_media_matches'])\n",
+    "axs[0].set(ylim=(0,1),title='IoU medio entre pares correctamente emparejados',ylabel='IoU')\n",
+    "axs[1].bar(names,df_summary['MAE_conteo_imagen'])\n",
+    "axs[1].set(title='Error absoluto medio de conteo por imagen',ylabel='Instancias / imagen')\n",
+    "for ax in axs:ax.tick_params(axis='x',labelrotation=10)\n",
+    "fig.suptitle('FaroPigSeg | Análisis geométrico descriptivo (test por fecha)')\n",
+    "fig.tight_layout();fig.savefig(OUTPUT_FIG,dpi=170,bbox_inches='tight');plt.show()\n",
+    "\n",
+    "result={'etapa':'CERDOS_11_confiabilidad_geometrica','fecha_utc':datetime.now(timezone.utc).isoformat(),\n",
+    "        'protocolo':PROTO,'resumen':df_summary.replace({np.nan:None}).to_dict('records'),\n",
+    "        'por_fecha':df_date.replace({np.nan:None}).to_dict('records'),\n",
+    "        'proxy_congestion':df_cong.replace({np.nan:None}).to_dict('records'),\n",
+    "        'limitaciones':limitations,\n",
+    "        'interpretacion':'Medidas descriptivas en pares emparejados, no AP ni prueba experimental de oclusión.'}\n",
+    "OUTPUT_JSON.write_text(json.dumps(result,ensure_ascii=False,indent=2,allow_nan=False),encoding='utf-8')\n",
+    "print('✅ Reporte:',OUTPUT_JSON)\n"
+   ],
+   "id": "-d8Y-YqEjAqh"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "1NisNDXYjAqh"
+   },
+   "source": [
+    "## 6. Exportación automática ZIP al computador y Drive"
+   ],
+   "id": "1NisNDXYjAqh"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "id": "VS5eyWcSjAqi",
+    "colab": {
+     "base_uri": "https://localhost:8080/",
+     "height": 54
+    }
+   },
+   "execution_count": null,
+   "outputs": [],
+   "source": [
+    "from google.colab import files\n",
+    "ZIP=EXPORT/'CERDOS_11_Confiabilidad_Geometrica_Resultados.zip'\n",
+    "entries=[OUTPUT_XLSX,OUTPUT_FIG,OUTPUT_JSON,PROTO_PATH]\n",
+    "assert all(p.is_file() for p in entries),'Hay productos 11 faltantes; no crear ZIP'\n",
+    "with zipfile.ZipFile(ZIP,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=6) as f:\n",
+    "    for item in entries:f.write(item,arcname=item.name)\n",
+    "with zipfile.ZipFile(ZIP) as f:assert f.testzip() is None,'ZIP dañado'\n",
+    "print('✅ Archivo ZIP guardado en Drive:',ZIP)\n",
+    "files.download(str(ZIP))\n"
+   ],
+   "id": "VS5eyWcSjAqi"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "ibngSLPijAqi"
+   },
+   "source": [
+    "**Siguiente:** `12_CERDOS_Eficiencia_Computacional_GPU.ipynb`, usando GPU T4. El Notebook 12 no necesita los resultados de geometría para medir tiempos; ambos análisis son complementarios. Envía primero el ZIP 11 a ChatGPT para inspeccionar errores geométricos."
+   ],
+   "id": "ibngSLPijAqi"
+  }
+ ],
+ "metadata": {
+  "colab": {
+   "provenance": []
+  },
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "name": "python"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}

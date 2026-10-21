@@ -1,0 +1,194 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "cf00161d",
+   "metadata": {
+    "id": "cf00161d"
+   },
+   "source": [
+    "# 🐖 03 | Entrenamiento YOLO11n-seg\n",
+    "\n",
+    "**RECURSO REQUERIDO: GPU (T4 o superior; selección antes de iniciar)**. Este notebook realiza exclusivamente su propia etapa. **No cambies CPU/GPU dentro del notebook.**\n",
+    "\n",
+    "Proyecto: Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖. Datos: FaroPigSeg, licencia reportada CC BY-NC 4.0; citar fuente https://github.com/yudong888/FaroPig-Datasets.\n",
+    "\n",
+    "**Ruta general:** `MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖/`. Ejecutar en orden 00 → 01 → 02 → 03 → 04. Todos los resultados se guardan en Drive."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "b9cbc0b5",
+   "metadata": {
+    "id": "b9cbc0b5"
+   },
+   "source": [
+    "## Objetivo\n",
+    "Entrenar **solo** YOLO11n-seg utilizando las listas de fechas creadas en Notebook 02. Conserva `best.pt`, `last.pt`, curvas y configuración en Google Drive. No realiza auditoría, descarga, evaluación sobre test ni segmentación de imágenes nuevas.\n",
+    "\n",
+    "En Colab: **Entorno de ejecución → Cambiar tipo de entorno → T4 GPU**, y entonces **Ejecutar todas**. No es necesario regresar a CPU en este notebook."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "9f4777e2",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "9f4777e2"
+   },
+   "outputs": [],
+   "source": [
+    "import torch\n",
+    "assert torch.cuda.is_available(), ('NO HAY GPU: activa GPU en Entorno de ejecución → Cambiar tipo de entorno. '\n",
+    "                                  'No ejecutes el entrenamiento con CPU.')\n",
+    "print('✅ GPU disponible:',torch.cuda.get_device_name(0))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "ad86d08f",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "ad86d08f"
+   },
+   "outputs": [],
+   "source": [
+    "%pip -q install \"ultralytics>=8.3,<9\" \"pyyaml>=6,<7\" \"pandas>=2,<3\" openpyxl"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "8896b4dc",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "8896b4dc"
+   },
+   "outputs": [],
+   "source": [
+    "from google.colab import drive\n",
+    "from pathlib import Path\n",
+    "from datetime import datetime, timezone\n",
+    "import json, os\n",
+    "\n",
+    "drive.mount('/content/drive')\n",
+    "ROOT = Path('/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖')\n",
+    "if not ROOT.is_dir():\n",
+    "    raise FileNotFoundError(\n",
+    "        'No se encontró la carpeta principal. Verifica la cuenta de Google y el nombre de la carpeta: '\n",
+    "        'Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖'\n",
+    "    )\n",
+    "DATA_ROOT = ROOT / '01_Datasets' / 'FaroPigSeg' / 'extraido' / 'FaroPigSeg'\n",
+    "DATASET_DIR = ROOT / '01_Datasets' / 'FaroPigSeg'\n",
+    "RES = ROOT / '03_Resultados'\n",
+    "EXPO = ROOT / '05_Exportaciones_ZIP'\n",
+    "for sub in ('01_Exploracion','02_Segmentacion','03_Metricas','04_Figuras','05_Reportes','06_Entrenamiento'):\n",
+    "    (RES / sub).mkdir(parents=True, exist_ok=True)\n",
+    "EXPO.mkdir(parents=True,exist_ok=True)\n",
+    "print('Proyecto:',ROOT)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c8348f11",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "c8348f11"
+   },
+   "outputs": [],
+   "source": [
+    "import torch,yaml,subprocess,hashlib,platform,pandas as pd\n",
+    "from ultralytics import YOLO\n",
+    "assert torch.cuda.is_available(), 'Se perdió la GPU. Reinicia el entorno con GPU.'\n",
+    "YAML=DATASET_DIR/'split_fecha_v1'/'data_fecha.yaml'\n",
+    "assert YAML.is_file(), 'Primero ejecuta el notebook 02 (CPU) para crear data_fecha.yaml.'\n",
+    "cf=yaml.safe_load(YAML.read_text(encoding='utf8'))\n",
+    "for k in ('train','val','test'):\n",
+    "    assert Path(cf[k]).is_file(),f'Falta {cf[k]}. Ejecuta notebook 02.'\n",
+    "folder=RES/'06_Entrenamiento';name='YOLO11n_fecha_v1'\n",
+    "RUN=folder/name\n",
+    "BEST=RUN/'weights'/'best.pt'; LAST=RUN/'weights'/'last.pt'\n",
+    "print('Modelo: YOLO11n-seg | Épocas máximas: 60 | Tamaño 640 | Batch 8')\n",
+    "print('Corrida:',RUN)\n",
+    "print('Partición:',YAML)\n",
+    "\n",
+    "if BEST.is_file() and (RUN/'ENTRENAMIENTO_FINALIZADO.json').exists():\n",
+    "    print('✅ Entrenamiento ya finalizado. No se repetirá.')\n",
+    "elif LAST.is_file():\n",
+    "    print('♻️ Reanudando entrenamiento desde last.pt de esta misma corrida.')\n",
+    "    YOLO(str(LAST)).train(resume=True)\n",
+    "else:\n",
+    "    model=YOLO('yolo11n-seg.pt')\n",
+    "    model.train(data=str(YAML),epochs=60,imgsz=640,batch=8,device=0,seed=2026,\n",
+    "                deterministic=True,patience=15,workers=2,project=str(folder),\n",
+    "                name=name,exist_ok=True,save=True,save_period=10,plots=True)\n",
+    "\n",
+    "assert BEST.is_file(),'No existe best.pt tras el entrenamiento. Revisar la salida de Ultralytics.'\n",
+    "(RUN/'ENTRENAMIENTO_FINALIZADO.json').write_text(json.dumps({'completado_utc':datetime.now(timezone.utc).isoformat(),'yaml':str(YAML),'semilla':2026},ensure_ascii=False,indent=2),encoding='utf8')\n",
+    "print('✅ Pesos entrenados:',BEST)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "d5db775f",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "d5db775f"
+   },
+   "outputs": [],
+   "source": [
+    "import ultralytics\n",
+    "history=RUN/'results.csv'\n",
+    "if history.is_file():\n",
+    "    df=pd.read_csv(history);df.columns=[x.strip() for x in df.columns]\n",
+    "    with pd.ExcelWriter(RES/'03_Metricas'/'CERDOS_03_Historial_Entrenamiento.xlsx',engine='openpyxl') as wr:\n",
+    "        df.to_excel(wr,sheet_name='Epocas',index=False)\n",
+    "    print('✅ Historial en Excel')\n",
+    "report={'etapa':'03_entrenamiento_GPU','fecha_utc':datetime.now(timezone.utc).isoformat(),\n",
+    "        'modelo':'yolo11n-seg.pt','semilla':2026,'epocas_max':60,'imgsz':640,'batch':8,\n",
+    "        'best_weights':str(BEST),'device':torch.cuda.get_device_name(0),\n",
+    "        'versions':{'torch':torch.__version__,'ultralytics':ultralytics.__version__,'python':platform.python_version()},\n",
+    "        'yaml':str(YAML),'advertencia':'El test no se evalúa aquí.'}\n",
+    "(RES/'05_Reportes'/'CERDOS_03_Entrenamiento_manifest.json').write_text(json.dumps(report,indent=2,ensure_ascii=False),encoding='utf8')\n",
+    "print('✅ Entrenamiento registrado. Siguiente: notebook 04 en GPU.')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "f96e9f31",
+   "metadata": {
+    "id": "f96e9f31"
+   },
+   "source": [
+    "**Siguiente:** `04_CERDOS_Segmentacion_Evaluacion_GPU.ipynb`. Mantén la **GPU**, pero abre el notebook 04 por separado."
+   ]
+  }
+ ],
+ "metadata": {
+  "colab": {
+   "provenance": [],
+   "gpuType": "T4"
+  },
+  "kernelspec": {
+   "display_name": "Python 3",
+   "name": "python3"
+  },
+  "accelerator": "GPU"
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}

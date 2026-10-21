@@ -1,0 +1,205 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "ab0fcac2",
+   "metadata": {
+    "id": "ab0fcac2"
+   },
+   "source": [
+    "# 🐖 02 | Preparación de segmentación y particiones\n",
+    "\n",
+    "**RECURSO REQUERIDO: CPU (sin acelerador)**. Este notebook realiza exclusivamente su propia etapa. **No cambies CPU/GPU dentro del notebook.**\n",
+    "\n",
+    "Proyecto: Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖. Datos: FaroPigSeg, licencia reportada CC BY-NC 4.0; citar fuente https://github.com/yudong888/FaroPig-Datasets.\n",
+    "\n",
+    "**Ruta general:** `MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖/`. Ejecutar en orden 00 → 01 → 02 → 03 → 04. Todos los resultados se guardan en Drive."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "2912b9cf",
+   "metadata": {
+    "id": "2912b9cf"
+   },
+   "source": [
+    "## Objetivo\n",
+    "Preparar las listas de imágenes `train`, `val`, `test` por **fecha completa inferida del nombre del archivo**, con semilla fija y sin copiar ni modificar los originales. También representa máscaras de referencia.\n",
+    "\n",
+    "**Límite:** las fechas no garantizan independencia entre granjas/corrales/animales; es una mejora frente al split original por imagen."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "aa3e6fe4",
+   "metadata": {
+    "id": "aa3e6fe4"
+   },
+   "outputs": [],
+   "source": [
+    "%pip -q install numpy pandas pillow matplotlib pyyaml openpyxl scikit-learn"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "ad3825e9",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "ad3825e9"
+   },
+   "outputs": [],
+   "source": [
+    "from google.colab import drive\n",
+    "from pathlib import Path\n",
+    "from datetime import datetime, timezone\n",
+    "import json, os\n",
+    "\n",
+    "drive.mount('/content/drive')\n",
+    "ROOT = Path('/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖')\n",
+    "if not ROOT.is_dir():\n",
+    "    raise FileNotFoundError(\n",
+    "        'No se encontró la carpeta principal. Verifica la cuenta de Google y el nombre de la carpeta: '\n",
+    "        'Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖'\n",
+    "    )\n",
+    "DATA_ROOT = ROOT / '01_Datasets' / 'FaroPigSeg' / 'extraido' / 'FaroPigSeg'\n",
+    "DATASET_DIR = ROOT / '01_Datasets' / 'FaroPigSeg'\n",
+    "RES = ROOT / '03_Resultados'\n",
+    "EXPO = ROOT / '05_Exportaciones_ZIP'\n",
+    "for sub in ('01_Exploracion','02_Segmentacion','03_Metricas','04_Figuras','05_Reportes','06_Entrenamiento'):\n",
+    "    (RES / sub).mkdir(parents=True, exist_ok=True)\n",
+    "EXPO.mkdir(parents=True,exist_ok=True)\n",
+    "print('Proyecto:',ROOT)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "71313ce2",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "71313ce2"
+   },
+   "outputs": [],
+   "source": [
+    "import re,random,hashlib,yaml,numpy as np,pandas as pd\n",
+    "from PIL import Image\n",
+    "from matplotlib import pyplot as plt\n",
+    "from matplotlib.patches import Polygon\n",
+    "\n",
+    "base=DATA_ROOT\n",
+    "splits=('train','val','test')\n",
+    "items=[]; regex=re.compile(r'^(\\d{4}-\\d{2}-\\d{2})')\n",
+    "for orig in splits:\n",
+    "    d=base/orig/'images'\n",
+    "    assert d.is_dir(),f'No existe {d}. Primero ejecuta 00.'\n",
+    "    for img in sorted(d.iterdir()):\n",
+    "        if img.suffix.lower() not in {'.jpeg','.jpg','.png','.webp','.bmp'}:continue\n",
+    "        match=regex.match(img.name)\n",
+    "        if not match:raise ValueError(f'Imagen sin fecha identificable: {img.name}')\n",
+    "        lbl=base/orig/'labels'/(img.stem+'.txt')\n",
+    "        if not lbl.is_file():raise FileNotFoundError(f'Falta la etiqueta {lbl}')\n",
+    "        items.append({'imagen':str(img),'origen':orig,'fecha':match.group(1),'etiqueta':str(lbl)})\n",
+    "assert items,'No hay imágenes.'\n",
+    "source_fingerprint=hashlib.sha256('\\n'.join(sorted(z['imagen'] for z in items)).encode()).hexdigest()\n",
+    "DEST=DATASET_DIR/'split_fecha_v1'\n",
+    "DEST.mkdir(parents=True,exist_ok=True)\n",
+    "manifest=DEST/'particion_fecha_manifest.json'\n",
+    "if manifest.is_file():\n",
+    "    old=json.loads(manifest.read_text(encoding='utf8'))\n",
+    "    if old['fingerprint_lista_imagenes']!=source_fingerprint:\n",
+    "        raise RuntimeError('Cambió la lista de imágenes. Revisar manifiesto antes de regenerar particiones.')\n",
+    "    assignments=old['asignaciones_fecha']\n",
+    "    print('Reutilizando partición congelada previamente; no se sortean nuevas fechas.')\n",
+    "else:\n",
+    "    from sklearn.model_selection import GroupShuffleSplit\n",
+    "    fechas=sorted({x['fecha'] for x in items})\n",
+    "    if len(fechas)<10:raise ValueError('Muy pocas fechas para partición 3 vías.')\n",
+    "    gr=[x['fecha'] for x in items]\n",
+    "    idx=np.arange(len(items))\n",
+    "    g1=GroupShuffleSplit(n_splits=1,test_size=0.20,random_state=2026)\n",
+    "    remaining,test_indices=next(g1.split(idx,groups=gr))\n",
+    "    g2=GroupShuffleSplit(n_splits=1,test_size=0.20,random_state=2027)\n",
+    "    train_r,val_r=next(g2.split(remaining,groups=[gr[j] for j in remaining]))\n",
+    "    assignments={gr[j]:'train' for j in remaining[train_r]}\n",
+    "    assignments.update({gr[j]:'val' for j in remaining[val_r]})\n",
+    "    assignments.update({gr[j]:'test' for j in test_indices})\n",
+    "    manifest.write_text(json.dumps({'semilla':2026,'semilla_val':2027,'algoritmo':'GroupShuffleSplit test 20% fechas; validacion 20% restante', 'criterio':'fecha_iso_en_nombre','fingerprint_lista_imagenes':source_fingerprint,\n",
+    "                                    'asignaciones_fecha':assignments,'fecha_utc':datetime.now(timezone.utc).isoformat()},\n",
+    "                                   ensure_ascii=False,indent=2),encoding='utf8')\n",
+    "assert set(assignments)=={z['fecha'] for z in items}\n",
+    "by_split={s:sorted(x['imagen'] for x in items if assignments[x['fecha']]==s) for s in splits}\n",
+    "assert sum(map(len,by_split.values()))==len(items) and all(by_split[s] for s in splits)\n",
+    "for s in splits:(DEST/f'{s}.txt').write_text('\\n'.join(by_split[s])+'\\n',encoding='utf8')\n",
+    "conf={'path':str(base),'train':str(DEST/'train.txt'),'val':str(DEST/'val.txt'),\n",
+    "      'test':str(DEST/'test.txt'),'names':{0:'cerdo'}}\n",
+    "config=DEST/'data_fecha.yaml'\n",
+    "config.write_text(yaml.safe_dump(conf,sort_keys=False,allow_unicode=True),encoding='utf8')\n",
+    "registro=pd.DataFrame([{**x,'nuevo_split':assignments[x['fecha']]} for x in items])\n",
+    "resumen=registro.groupby('nuevo_split',as_index=False).agg(imagenes=('imagen','size'),fechas=('fecha','nunique'))\n",
+    "print('✅ Partición de fechas sin solapamientos:');print(resumen.to_string(index=False))\n",
+    "print('Config YOLO:',config)\n",
+    "print('Fechas por split:',{s:len(set(registro.loc[registro.nuevo_split.eq(s),'fecha'])) for s in splits})"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "17ddb4c5",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/",
+     "height": 0
+    },
+    "id": "17ddb4c5"
+   },
+   "outputs": [],
+   "source": [
+    "excel=RES/'01_Exploracion'/'CERDOS_02_Particion_Independiente_Fecha.xlsx'\n",
+    "with pd.ExcelWriter(excel,engine='openpyxl') as xw:\n",
+    "    resumen.to_excel(xw,sheet_name='Resumen',index=False)\n",
+    "    registro.to_excel(xw,sheet_name='Asignaciones',index=False)\n",
+    "    pd.DataFrame([{'fecha':d,'particion':s} for d,s in sorted(assignments.items())]).to_excel(xw,sheet_name='Fechas',index=False)\n",
+    "\n",
+    "fig,axs=plt.subplots(1,3,figsize=(15,5))\n",
+    "for ax,s in zip(axs,splits):\n",
+    "    img=Path(by_split[s][0]); lab=Path(str(img).replace('/images/','/labels/')).with_suffix('.txt')\n",
+    "    with Image.open(img) as im:\n",
+    "        rgb=np.array(im.convert('RGB'))\n",
+    "    ax.imshow(rgb);h,w=rgb.shape[:2];ax.set_title(f'{s}: anotaciones originales');ax.axis('off')\n",
+    "    for l in lab.read_text(encoding='utf-8-sig').splitlines():\n",
+    "        xy=np.asarray([float(v) for v in l.split()[1:]],dtype=float).reshape(-1,2)\n",
+    "        xy=xy*np.array([w,h]);ax.add_patch(Polygon(xy,closed=True,fill=False,linewidth=1.1))\n",
+    "fig.tight_layout();figpath=RES/'04_Figuras'/'CERDOS_02_Mascaras_Referencia.png';fig.savefig(figpath,dpi=160);plt.show()\n",
+    "print('✅ Excel:',excel,'\\n✅ Figura:',figpath,'\\n✅ YAML:',config)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "a6f6b488",
+   "metadata": {
+    "id": "a6f6b488"
+   },
+   "source": [
+    "**Siguiente:** abrir `03_CERDOS_Entrenamiento_YOLO11n_GPU.ipynb` y seleccionar **GPU T4** antes de ejecutarlo. Hasta ahora no se ha entrenado ningún modelo."
+   ]
+  }
+ ],
+ "metadata": {
+  "colab": {
+   "provenance": []
+  },
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}

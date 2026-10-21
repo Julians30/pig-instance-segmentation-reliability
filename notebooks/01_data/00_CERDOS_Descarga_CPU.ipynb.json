@@ -1,0 +1,161 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "7a902cf0",
+   "metadata": {
+    "id": "7a902cf0"
+   },
+   "source": [
+    "# 🐖 00 | Descarga y verificación del dataset\n",
+    "\n",
+    "**RECURSO REQUERIDO: CPU (sin acelerador)**. Este notebook realiza exclusivamente su propia etapa. **No cambies CPU/GPU dentro del notebook.**\n",
+    "\n",
+    "Proyecto: Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖. Datos: FaroPigSeg, licencia reportada CC BY-NC 4.0; citar fuente https://github.com/yudong888/FaroPig-Datasets.\n",
+    "\n",
+    "**Ruta general:** `MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖/`. Ejecutar en orden 00 → 01 → 02 → 03 → 04. Todos los resultados se guardan en Drive."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "67b39a14",
+   "metadata": {
+    "id": "67b39a14"
+   },
+   "source": [
+    "## Objetivo\n",
+    "Descargar **solo si el dataset no está ya extraído**. Comprobar que contiene imágenes y etiquetas originales. No se calculan métricas y no se entrena ningún modelo.\n",
+    "\n",
+    "Si el dataset ya existe en Drive, esta etapa finaliza en pocos segundos, sin descargarlo otra vez."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "49f27f90",
+   "metadata": {
+    "id": "49f27f90"
+   },
+   "outputs": [],
+   "source": [
+    "%pip -q install requests tqdm"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "4d4b4def",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "4d4b4def"
+   },
+   "outputs": [],
+   "source": [
+    "from google.colab import drive\n",
+    "from pathlib import Path\n",
+    "from datetime import datetime, timezone\n",
+    "import json, os\n",
+    "\n",
+    "drive.mount('/content/drive')\n",
+    "ROOT = Path('/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖')\n",
+    "if not ROOT.is_dir():\n",
+    "    raise FileNotFoundError(\n",
+    "        'No se encontró la carpeta principal. Verifica la cuenta de Google y el nombre de la carpeta: '\n",
+    "        'Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖'\n",
+    "    )\n",
+    "DATA_ROOT = ROOT / '01_Datasets' / 'FaroPigSeg' / 'extraido' / 'FaroPigSeg'\n",
+    "DATASET_DIR = ROOT / '01_Datasets' / 'FaroPigSeg'\n",
+    "RES = ROOT / '03_Resultados'\n",
+    "EXPO = ROOT / '05_Exportaciones_ZIP'\n",
+    "for sub in ('01_Exploracion','02_Segmentacion','03_Metricas','04_Figuras','05_Reportes','06_Entrenamiento'):\n",
+    "    (RES / sub).mkdir(parents=True, exist_ok=True)\n",
+    "EXPO.mkdir(parents=True,exist_ok=True)\n",
+    "print('Proyecto:',ROOT)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "bab4ae97",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "bab4ae97"
+   },
+   "outputs": [],
+   "source": [
+    "import hashlib, zipfile, requests, shutil, stat\n",
+    "from tqdm.auto import tqdm\n",
+    "SOURCE='https://data.chalearnlap.cvc.uab.cat/FaroPig/FaroPigSeg.zip'\n",
+    "ZIP=DATASET_DIR/'FaroPigSeg_original.zip'\n",
+    "\n",
+    "def estructura_completa(path):\n",
+    "    return all((path/s/k).is_dir() and any((path/s/k).iterdir())\n",
+    "               for s in ('train','val','test') for k in ('images','labels'))\n",
+    "\n",
+    "if estructura_completa(DATA_ROOT):\n",
+    "    print('✅ FaroPigSeg ya está extraído en Drive. No se descarga ni se modifica.')\n",
+    "else:\n",
+    "    DATASET_DIR.mkdir(parents=True,exist_ok=True)\n",
+    "    if not (ZIP.is_file() and ZIP.stat().st_size>10_000_000 and zipfile.is_zipfile(ZIP)):\n",
+    "        PART=Path('/content/FaroPigSeg.zip.part')\n",
+    "        with requests.get(SOURCE,stream=True,timeout=(30,180)) as req:\n",
+    "            req.raise_for_status()\n",
+    "            if 'html' in req.headers.get('Content-Type','').lower():\n",
+    "                raise RuntimeError('El servidor devolvió HTML en vez del dataset.')\n",
+    "            with open(PART,'wb') as f:\n",
+    "                for block in tqdm(req.iter_content(chunk_size=1024*1024),desc='Descarga FaroPigSeg'):\n",
+    "                    if block:f.write(block)\n",
+    "        if PART.stat().st_size<10_000_000 or not zipfile.is_zipfile(PART):\n",
+    "            raise RuntimeError('La descarga no es un ZIP válido.')\n",
+    "        shutil.copy2(PART,ZIP)\n",
+    "    with zipfile.ZipFile(ZIP) as z:\n",
+    "        if z.testzip(): raise RuntimeError('ZIP dañado, revisar la descarga.')\n",
+    "        target=DATASET_DIR/'extraido'\n",
+    "        for entry in z.infolist():\n",
+    "            dest=(target/entry.filename).resolve()\n",
+    "            if not dest.is_relative_to(target.resolve()):\n",
+    "                raise RuntimeError('Ruta insegura en el ZIP.')\n",
+    "            if stat.S_ISLNK(entry.external_attr>>16):\n",
+    "                raise RuntimeError('Enlace simbólico no permitido en ZIP.')\n",
+    "        z.extractall(target)\n",
+    "    if not estructura_completa(DATA_ROOT):\n",
+    "        raise RuntimeError(f'ZIP extraído, pero la estructura no coincide con: {DATA_ROOT}')\n",
+    "\n",
+    "counts={s:{k:len(list((DATA_ROOT/s/k).iterdir())) for k in ('images','labels')}\n",
+    "        for s in ('train','val','test')}\n",
+    "print('Archivos por partición:',counts)\n",
+    "report={'etapa':'00_descarga_CPU','fecha_utc':datetime.now(timezone.utc).isoformat(),\n",
+    "        'source':SOURCE,'dataset':str(DATA_ROOT),'conteos':counts}\n",
+    "dest=RES/'05_Reportes'/'CERDOS_00_Descarga_manifest.json'\n",
+    "dest.write_text(json.dumps(report,indent=2,ensure_ascii=False),encoding='utf8')\n",
+    "print('✅ Registro guardado:',dest)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "d8124c2d",
+   "metadata": {
+    "id": "d8124c2d"
+   },
+   "source": [
+    "**Siguiente:** ejecutar `01_CERDOS_Auditoria_CPU.ipynb` con **CPU**. No actives GPU aún."
+   ]
+  }
+ ],
+ "metadata": {
+  "colab": {
+   "provenance": []
+  },
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}

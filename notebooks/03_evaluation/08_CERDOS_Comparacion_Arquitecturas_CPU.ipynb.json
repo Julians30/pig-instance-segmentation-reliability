@@ -1,0 +1,214 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "d9453d61f5ca"
+   },
+   "source": [
+    "# 🐖 08 | Comparación exploratoria YOLO versus Mask R-CNN\n",
+    "\n",
+    "**RECURSO: CPU — SIN ACELERADOR**. Lee métricas ya guardadas; no entrena ni hace inferencia sobre imágenes. Exporta Excel de comparación, figura y conclusiones metodológicas.\n",
+    "\n",
+    "**Proyecto:** Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖\n",
+    "\n",
+    "Los notebooks son independientes: cada uno utiliza los productos guardados por la etapa anterior, sin repetir descarga o entrenamiento.\n"
+   ],
+   "id": "d9453d61f5ca"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "0cb55b94925e"
+   },
+   "source": [
+    "## Objetivo\n",
+    "\n",
+    "Comparar de manera descriptiva **YOLO11n-seg** y **Mask R-CNN ResNet50-FPN** en el conjunto de 373 imágenes test reservadas por fecha. Los resultados son **provisionales**: las métricas Ultralytics y COCOeval tienen diferencias técnicas; las épocas y los presupuestos de cómputo también difieren. No extraer conclusiones de superioridad ni significación estadística hasta realizar evaluación armonizada y varias semillas.\n",
+    "\n",
+    "Si todavía no ejecutaste Mask R-CNN (notebook 06 y 07), este notebook te avisará sin crear resultados ficticios.\n"
+   ],
+   "id": "0cb55b94925e"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "id": "22a7a1d6faf9"
+   },
+   "source": [
+    "%pip -q install pandas openpyxl matplotlib pyyaml\n"
+   ],
+   "execution_count": null,
+   "outputs": [],
+   "id": "22a7a1d6faf9"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "5f584696a39a"
+   },
+   "source": [
+    "from google.colab import drive\n",
+    "from pathlib import Path\n",
+    "from datetime import datetime, timezone\n",
+    "import json, hashlib, os\n",
+    "\n",
+    "drive.mount('/content/drive')\n",
+    "ROOT=Path('/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖')\n",
+    "if not ROOT.is_dir():\n",
+    "    raise FileNotFoundError('No encuentro la carpeta del proyecto. Comprueba que Colab monta la cuenta correcta y que el nombre no cambió: '+str(ROOT))\n",
+    "DATA=ROOT/'01_Datasets'/'FaroPigSeg'\n",
+    "EXTRACT=DATA/'extraido'/'FaroPigSeg'\n",
+    "SPLIT=DATA/'split_fecha_v1'\n",
+    "RES=ROOT/'03_Resultados'\n",
+    "EXP=ROOT/'05_Exportaciones_ZIP'\n",
+    "for s in ['01_Exploracion','02_Segmentacion','03_Metricas','04_Figuras','05_Reportes','06_Entrenamiento']:\n",
+    "    (RES/s).mkdir(parents=True,exist_ok=True)\n",
+    "EXP.mkdir(exist_ok=True,parents=True)\n",
+    "MANIFEST=SPLIT/'particion_fecha_manifest.json'\n",
+    "YAML=SPLIT/'data_fecha.yaml'\n",
+    "if not (MANIFEST.is_file() and YAML.is_file()):\n",
+    "    raise FileNotFoundError('Faltan los archivos de partición congelada; ejecutar notebook 02 en CPU antes de continuar.')\n",
+    "part=json.loads(MANIFEST.read_text(encoding='utf-8'))\n",
+    "assert len(set(part['asignaciones_fecha'].values())-{'train','val','test'})==0\n",
+    "print('Carpeta del proyecto:',ROOT)\n",
+    "print('Fechas por grupo:',{k:sum(v==k for v in part['asignaciones_fecha'].values()) for k in ('train','val','test')})\n"
+   ],
+   "execution_count": null,
+   "outputs": [],
+   "id": "5f584696a39a"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "0dd38a93bad0"
+   },
+   "source": [
+    "import pandas as pd,numpy as np,matplotlib.pyplot as plt\n",
+    "YOLO_REPORT=RES/'03_Metricas'/'CERDOS_04_Evaluacion_test.json'\n",
+    "MASK_REPORT=RES/'05_Reportes'/'CERDOS_07_Evaluacion_MaskRCNN.json'\n",
+    "MASK_EXCEL=RES/'03_Metricas'/'CERDOS_07_Por_Imagen_MaskRCNN.xlsx'\n",
+    "for p in [YOLO_REPORT,MASK_REPORT,MASK_EXCEL]:\n",
+    "    if not p.is_file():raise FileNotFoundError(f'Falta {p.name}; primero finaliza 04 (YOLO) y 07 (Mask R-CNN).')\n",
+    "yolo=json.loads(YOLO_REPORT.read_text(encoding='utf8'))\n",
+    "mask=json.loads(MASK_REPORT.read_text(encoding='utf8'))\n",
+    "assert int(yolo['test_count'])==int(mask['num_images']), 'Los test no parecen iguales; detener comparación.'\n",
+    "assert mask['yaml_sha256']==hashlib.sha256(YAML.read_bytes()).hexdigest(), 'Cambiaron las listas de test; detener.'\n",
+    "metrics=['seg_map50','seg_map50_95','seg_map75']\n",
+    "rows=[]\n",
+    "for model,rec,source in [('YOLO11n-seg',yolo,'Ultralytics'),('Mask R-CNN ResNet50-FPN',mask,'COCOeval')]:\n",
+    "    rows.append({'arquitectura':model,'evaluador':source,'test_imagenes':int(rec.get('test_count',rec.get('num_images'))),\n",
+    "                 'mAP50_mascaras':float(rec['seg_map50']), 'mAP50_95_mascaras':float(rec['seg_map50_95']),\n",
+    "                 'mAP75_mascaras':float(rec.get('seg_map75',np.nan)),\n",
+    "                 'peso_sha256':rec['weights_sha256']})\n",
+    "compare=pd.DataFrame(rows)\n",
+    "delta=float(compare.iloc[1]['mAP50_95_mascaras']-compare.iloc[0]['mAP50_95_mascaras'])\n",
+    "print(compare[['arquitectura','evaluador','test_imagenes','mAP50_mascaras','mAP50_95_mascaras']].to_string(index=False))\n",
+    "print('Diferencia exploratoria Mask R-CNN − YOLO (mAP50-95) =',round(delta,4))\n",
+    "print('⚠️ Evaluadores diferentes. No afirmar ventaja estadística; el test no es para sintonizar hiperparámetros.')\n"
+   ],
+   "execution_count": null,
+   "outputs": [],
+   "id": "0dd38a93bad0"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/",
+     "height": 503
+    },
+    "id": "d25fd4c0bc0b"
+   },
+   "source": [
+    "report=RES/'05_Reportes'/'CERDOS_08_Conclusiones_Preliminares.json'\n",
+    "excel=RES/'03_Metricas'/'CERDOS_08_Comparacion_Arquitecturas.xlsx'\n",
+    "err=pd.read_excel(MASK_EXCEL,sheet_name='Errores_por_fecha')\n",
+    "notes=[\n",
+    " 'FaroPigSeg tiene imágenes; esta comparación no demuestra seguimiento ni conducta.',\n",
+    " 'Las 12 figuras del ZIP YOLO eran ejemplos; el test cuantitativo abarcó 373 imágenes.',\n",
+    " 'Se estiman AP por evaluadores distintos (Ultralytics y COCOeval); comparación provisional.',\n",
+    " 'Los modelos tienen diferente número de parámetros, épocas y presupuesto de cómputo.',\n",
+    " 'Sin intervalos de incertidumbre armonizados y varias semillas no afirmar superioridad.',\n",
+    " 'La independencia entre fechas no implica independencia entre granjas o animales.',\n",
+    " 'Medición de instancias por imagen no es identificación única de cerdos.'\n",
+    "]\n",
+    "with pd.ExcelWriter(excel,engine='openpyxl') as w:\n",
+    "    compare.to_excel(w,sheet_name='Comparacion_global',index=False)\n",
+    "    err.to_excel(w,sheet_name='Errores_MaskRCNN_fecha',index=False)\n",
+    "    pd.DataFrame({'limitaciones':notes}).to_excel(w,sheet_name='Limitaciones',index=False)\n",
+    "fig,ax=plt.subplots(figsize=(9,4.6))\n",
+    "x=np.arange(len(compare));width=.32\n",
+    "ax.bar(x-width/2,compare['mAP50_mascaras'],width,label='mAP50')\n",
+    "ax.bar(x+width/2,compare['mAP50_95_mascaras'],width,label='mAP50-95')\n",
+    "ax.set_xticks(x,compare['arquitectura']);ax.set_ylabel('AP (0–1)');ax.set_ylim(0,1)\n",
+    "ax.set_title('Comparación descriptiva en test reservado por fecha')\n",
+    "ax.legend();fig.tight_layout()\n",
+    "figure=RES/'04_Figuras'/'CERDOS_08_AP_Arquitecturas.png';fig.savefig(figure,dpi=180);plt.show()\n",
+    "report.write_text(json.dumps({'fecha_utc':datetime.now(timezone.utc).isoformat(),\n",
+    "             'evaluacion':'preliminar_no_armonizada','metricas':compare.to_dict('records'),\n",
+    "             'diferencia_maskrcnn_menos_yolo':delta,'limitaciones':notes},\n",
+    "             ensure_ascii=False,indent=2),encoding='utf8')\n",
+    "print('✅ Excel:',excel)\n"
+   ],
+   "execution_count": null,
+   "outputs": [],
+   "id": "d25fd4c0bc0b"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/",
+     "height": 54
+    },
+    "id": "a3619699ffa6"
+   },
+   "source": [
+    "import zipfile\n",
+    "from google.colab import files as colab_files\n",
+    "export=EXP/'CERDOS_08_Comparacion_Preliminar.zip'\n",
+    "with zipfile.ZipFile(export,'w',compression=zipfile.ZIP_DEFLATED) as z:\n",
+    "    for file in [excel,figure,report]:z.write(file,arcname=file.name)\n",
+    "print('✅ ZIP:',export)\n",
+    "colab_files.download(str(export))\n"
+   ],
+   "execution_count": null,
+   "outputs": [],
+   "id": "a3619699ffa6"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "7266cb5f3442"
+   },
+   "source": [
+    "### Próxima fase científica\n",
+    "\n",
+    "Para resultados publicables de comparación, una siguiente etapa deberá armonizar métricas por el mismo evaluador, analizar incertidumbre por fechas, múltiples semillas y perfiles de cómputo. **Videos de cerdos con ID temporal** serán necesarios para seguimiento y extracción de comportamiento.\n"
+   ],
+   "id": "7266cb5f3442"
+  }
+ ],
+ "metadata": {
+  "colab": {
+   "provenance": []
+  },
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "name": "python"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}

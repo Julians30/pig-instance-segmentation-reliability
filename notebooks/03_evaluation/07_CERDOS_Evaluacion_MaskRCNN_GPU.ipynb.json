@@ -1,0 +1,380 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "7347fe8a4c6b"
+   },
+   "source": [
+    "# 🐖 07 | Evaluación independiente Mask R-CNN en test\n",
+    "\n",
+    "**RECURSO: GPU T4 o superior**. Carga el modelo 06, calcula mAP COCO de segmentación una sola vez en las fechas reservadas, y genera resultados por imagen más figuras de ejemplo.\n",
+    "\n",
+    "**Proyecto:** Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖\n",
+    "\n",
+    "Los notebooks son independientes: cada uno utiliza los productos guardados por la etapa anterior, sin repetir descarga o entrenamiento.\n"
+   ],
+   "id": "7347fe8a4c6b"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "64122b59edbb"
+   },
+   "source": [
+    "## Regla de integridad\n",
+    "\n",
+    "**Ejecutar este notebook solamente cuando el entrenamiento 06 esté finalizado**. El test permanece reservado. Si la evaluación ya existe y coincide el hash de pesos y YAML, no vuelve a consultar test; únicamente lee la evaluación guardada. No modificar la arquitectura en función de los resultados de prueba.\n",
+    "\n",
+    "Se exportan **todas** las 373 imágenes como filas de Excel con conteos y TP/FP/FN @ IoU 0,5; solo se guardan **12 imágenes ilustrativas** en PNG para no sobrecargar Drive. Las métricas de segmentación COCO y el conteo a confianza 0,25 no son equivalentes a número físico de animales distintos.\n"
+   ],
+   "id": "64122b59edbb"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "1fa61e3514f3"
+   },
+   "source": [
+    "import torch\n",
+    "if not torch.cuda.is_available():raise RuntimeError('Activa GPU T4 antes de comenzar este notebook.')\n",
+    "print('✅ GPU',torch.cuda.get_device_name(0))\n"
+   ],
+   "execution_count": null,
+   "outputs": [],
+   "id": "1fa61e3514f3"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "id": "6977cba9f820"
+   },
+   "source": [
+    "%pip -q install \"pycocotools>=2.0.8,<3\" \"pyyaml>=6,<7\" \"pandas>=2,<3\" openpyxl pillow opencv-python-headless matplotlib\n"
+   ],
+   "execution_count": null,
+   "outputs": [],
+   "id": "6977cba9f820"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "b409f6b100d1"
+   },
+   "source": [
+    "from google.colab import drive\n",
+    "from pathlib import Path\n",
+    "from datetime import datetime, timezone\n",
+    "import json, hashlib, os\n",
+    "\n",
+    "drive.mount('/content/drive')\n",
+    "ROOT=Path('/content/drive/MyDrive/Proyecto de investigación: Visión Artificial y Deep Learning en Cerdos 🐖')\n",
+    "if not ROOT.is_dir():\n",
+    "    raise FileNotFoundError('No encuentro la carpeta del proyecto. Comprueba que Colab monta la cuenta correcta y que el nombre no cambió: '+str(ROOT))\n",
+    "DATA=ROOT/'01_Datasets'/'FaroPigSeg'\n",
+    "EXTRACT=DATA/'extraido'/'FaroPigSeg'\n",
+    "SPLIT=DATA/'split_fecha_v1'\n",
+    "RES=ROOT/'03_Resultados'\n",
+    "EXP=ROOT/'05_Exportaciones_ZIP'\n",
+    "for s in ['01_Exploracion','02_Segmentacion','03_Metricas','04_Figuras','05_Reportes','06_Entrenamiento']:\n",
+    "    (RES/s).mkdir(parents=True,exist_ok=True)\n",
+    "EXP.mkdir(exist_ok=True,parents=True)\n",
+    "MANIFEST=SPLIT/'particion_fecha_manifest.json'\n",
+    "YAML=SPLIT/'data_fecha.yaml'\n",
+    "if not (MANIFEST.is_file() and YAML.is_file()):\n",
+    "    raise FileNotFoundError('Faltan los archivos de partición congelada; ejecutar notebook 02 en CPU antes de continuar.')\n",
+    "part=json.loads(MANIFEST.read_text(encoding='utf-8'))\n",
+    "assert len(set(part['asignaciones_fecha'].values())-{'train','val','test'})==0\n",
+    "print('Carpeta del proyecto:',ROOT)\n",
+    "print('Fechas por grupo:',{k:sum(v==k for v in part['asignaciones_fecha'].values()) for k in ('train','val','test')})\n"
+   ],
+   "execution_count": null,
+   "outputs": [],
+   "id": "b409f6b100d1"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "id": "43dd8adbb8e1"
+   },
+   "source": [
+    "import numpy as np, pandas as pd,torch,cv2,yaml,random,math\n",
+    "from PIL import Image\n",
+    "from torch.utils.data import Dataset,DataLoader\n",
+    "from torchvision.transforms.functional import to_tensor\n",
+    "\n",
+    "class PigMasks(Dataset):\n",
+    "    def __init__(self,imagelist):\n",
+    "        self.paths=[Path(s.strip()) for s in Path(imagelist).read_text(encoding='utf8').splitlines() if s.strip()]\n",
+    "        if not self.paths:raise RuntimeError('La partición está vacía: '+str(imagelist))\n",
+    "        missing=[str(p) for p in self.paths if not p.is_file()]\n",
+    "        if missing: raise FileNotFoundError('Hay imágenes ausentes: '+str(missing[:3]))\n",
+    "    def __len__(self):return len(self.paths)\n",
+    "    def __getitem__(self,index):\n",
+    "        p=self.paths[index]\n",
+    "        rgb=np.asarray(Image.open(p).convert('RGB'))\n",
+    "        h,w=rgb.shape[:2]\n",
+    "        lab=Path(str(p).replace('/images/','/labels/')).with_suffix('.txt')\n",
+    "        if not lab.is_file():raise FileNotFoundError('Etiqueta no localizada: '+str(lab))\n",
+    "        masks=[];boxes=[]\n",
+    "        for row in lab.read_text(encoding='utf-8-sig').splitlines():\n",
+    "            if not row.strip(): continue\n",
+    "            vals=row.split()\n",
+    "            if int(vals[0])!=0:raise ValueError('Clase inesperada en '+str(lab))\n",
+    "            points=np.asarray([float(v) for v in vals[1:]],dtype=np.float32)\n",
+    "            if len(points)<6 or len(points)%2:raise ValueError('Polígono inválido en '+str(lab))\n",
+    "            if not np.isfinite(points).all() or np.any((points<0)|(points>1)):\n",
+    "                raise ValueError('Coordenadas no normalizadas en '+str(lab))\n",
+    "            coords=points.reshape(-1,2)*np.asarray([w,h],dtype=np.float32)\n",
+    "            xy=np.rint(coords).astype(np.int32)\n",
+    "            xy[:,0]=np.clip(xy[:,0],0,w-1);xy[:,1]=np.clip(xy[:,1],0,h-1)\n",
+    "            mask=np.zeros((h,w),np.uint8)\n",
+    "            cv2.fillPoly(mask,[xy],1)\n",
+    "            yy,xx=np.where(mask)\n",
+    "            if len(xx)<3: continue\n",
+    "            x0,x1=int(xx.min()),int(xx.max()+1);y0,y1=int(yy.min()),int(yy.max()+1)\n",
+    "            if x1<=x0 or y1<=y0:continue\n",
+    "            masks.append(mask);boxes.append([x0,y0,x1,y1])\n",
+    "        if not masks:raise RuntimeError('Imagen sin máscaras válidas: '+p.name)\n",
+    "        tar={'boxes':torch.as_tensor(boxes,dtype=torch.float32),\n",
+    "             'labels':torch.ones((len(masks),),dtype=torch.int64),\n",
+    "             'masks':torch.as_tensor(np.stack(masks),dtype=torch.uint8),\n",
+    "             'image_id':torch.tensor([index],dtype=torch.int64),\n",
+    "             'area':torch.as_tensor([int(m.sum()) for m in masks],dtype=torch.float32),\n",
+    "             'iscrowd':torch.zeros((len(masks),),dtype=torch.int64)}\n",
+    "        return to_tensor(rgb.copy()),tar\n",
+    "\n",
+    "def collate_fn(batch):return tuple(zip(*batch))\n",
+    "\n",
+    "import torchvision\n",
+    "from torchvision.models.detection import maskrcnn_resnet50_fpn\n",
+    "from torchvision.models.detection.faster_rcnn import FastRCNNPredictor\n",
+    "from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor\n",
+    "\n",
+    "def build_maskrcnn(pretrained=True):\n",
+    "    model=maskrcnn_resnet50_fpn(weights='DEFAULT' if pretrained else None,\n",
+    "                               weights_backbone=None,min_size=512,max_size=768,\n",
+    "                               trainable_backbone_layers=3)\n",
+    "    in_features=model.roi_heads.box_predictor.cls_score.in_features\n",
+    "    model.roi_heads.box_predictor=FastRCNNPredictor(in_features,2)\n",
+    "    in_channels=model.roi_heads.mask_predictor.conv5_mask.in_channels\n",
+    "    model.roi_heads.mask_predictor=MaskRCNNPredictor(in_channels,256,2)\n",
+    "    # Congelar los mismos niveles, tanto en arranque con pesos COCO como en reanudación sin descarga.\n",
+    "    for name,parameter in model.backbone.body.named_parameters():\n",
+    "        if name.startswith(('conv1.', 'bn1.', 'layer1.')):\n",
+    "            parameter.requires_grad_(False)\n",
+    "    model.roi_heads.score_thresh=0.001\n",
+    "    model.roi_heads.detections_per_img=100\n",
+    "    return model\n",
+    "\n",
+    "def config_hash(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()\n",
+    "\n",
+    "from pycocotools.coco import COCO\n",
+    "from pycocotools.cocoeval import COCOeval\n",
+    "from pycocotools import mask as maskutils\n",
+    "from contextlib import redirect_stdout\n",
+    "import io\n",
+    "\n",
+    "def encode_mask(arr):\n",
+    "    enc=maskutils.encode(np.asfortranarray(np.asarray(arr,dtype=np.uint8)))\n",
+    "    enc['counts']=enc['counts'].decode('ascii')\n",
+    "    return enc\n",
+    "\n",
+    "def coco_metric_for_model(model,dataset,device,desc='Validación',include_rows=False):\n",
+    "    model.eval();gts=[];preds=[];image_records=[];annotations=[];aid=1\n",
+    "    for i in range(len(dataset)):\n",
+    "        image,target=dataset[i]\n",
+    "        height,width=image.shape[1:]\n",
+    "        gts.append({'id':i+1,'width':width,'height':height,'file_name':dataset.paths[i].name})\n",
+    "        gt_masks=target['masks'].numpy()\n",
+    "        for m in gt_masks:\n",
+    "            encoded=encode_mask(m)\n",
+    "            x,y,w,h=[float(v) for v in maskutils.toBbox({'size':encoded['size'],'counts':encoded['counts'].encode('ascii')})]\n",
+    "            annotations.append({'id':aid,'image_id':i+1,'category_id':1,'segmentation':encoded,\n",
+    "                                'bbox':[x,y,w,h],'area':int(m.sum()),'iscrowd':0});aid+=1\n",
+    "        with torch.no_grad():\n",
+    "            out=model([image.to(device)])[0]\n",
+    "        scores=out['scores'].detach().cpu().numpy()\n",
+    "        ms=(out['masks'].detach().cpu().numpy()[:,0]>.5) if len(scores) else np.zeros((0,height,width),dtype=bool)\n",
+    "        for j,score in enumerate(scores):\n",
+    "            if score<0.001: continue\n",
+    "            m=ms[j].astype(np.uint8)\n",
+    "            if not m.any():continue\n",
+    "            enc=encode_mask(m)\n",
+    "            preds.append({'image_id':i+1,'category_id':1,'segmentation':enc,'score':float(score)})\n",
+    "        if include_rows:\n",
+    "            filtered=np.where(scores>=.25)[0]\n",
+    "            predm=[ms[k].astype(bool) for k in filtered if k<len(ms)]\n",
+    "            p_scores=[float(scores[k]) for k in filtered if k<len(ms)]\n",
+    "            pairs=[]\n",
+    "            for gi,g in enumerate(gt_masks):\n",
+    "                for pj,pm in enumerate(predm):\n",
+    "                    inter=np.logical_and(g,pm).sum();union=np.logical_or(g,pm).sum()\n",
+    "                    iou=inter/max(1,union)\n",
+    "                    if iou>=.5:pairs.append((float(iou),gi,pj))\n",
+    "            used_gt=set();used_pred=set()\n",
+    "            for _,gi,pj in sorted(pairs,reverse=True):\n",
+    "                if gi not in used_gt and pj not in used_pred:\n",
+    "                    used_gt.add(gi);used_pred.add(pj)\n",
+    "            tp=len(used_gt)\n",
+    "            image_records.append({'imagen':dataset.paths[i].name,\n",
+    "                'fecha':dataset.paths[i].name[:10],\n",
+    "                'anotaciones_GT':len(gt_masks),'detecciones_conf_025':len(predm),\n",
+    "                'TP_IoU05':tp,'FP_IoU05':len(predm)-tp,'FN_IoU05':len(gt_masks)-tp,\n",
+    "                'confianza_media_pred':np.mean(p_scores) if p_scores else np.nan})\n",
+    "        if (i+1)%50==0:print(desc,i+1,'/',len(dataset))\n",
+    "    gt=COCO()\n",
+    "    gt.dataset={'images':gts,'annotations':annotations,'categories':[{'id':1,'name':'cerdo','supercategory':'animal'}]}\n",
+    "    with redirect_stdout(io.StringIO()):\n",
+    "        gt.createIndex()\n",
+    "        dt=gt.loadRes(preds) if preds else gt.loadRes([])\n",
+    "        ev=COCOeval(gt,dt,'segm');ev.evaluate();ev.accumulate();ev.summarize()\n",
+    "    return {'seg_map50_95':float(ev.stats[0]),'seg_map50':float(ev.stats[1]),\n",
+    "            'seg_map75':float(ev.stats[2]),'gt':len(annotations),\n",
+    "            'num_images':len(dataset),'pred_coarse':len(preds)},pd.DataFrame(image_records)\n"
+   ],
+   "execution_count": null,
+   "outputs": [],
+   "id": "43dd8adbb8e1"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/"
+    },
+    "id": "4a2d47f9c08a"
+   },
+   "source": [
+    "from matplotlib import pyplot as plt\n",
+    "import zipfile,platform,sys,torchvision\n",
+    "RUN=RES/'06_Entrenamiento'/'MaskRCNN_fecha_v1'\n",
+    "BEST=RUN/'maskrcnn_best_model.pt'\n",
+    "DONE=RUN/'ENTRENAMIENTO_FINALIZADO.json'\n",
+    "if not BEST.is_file() or not DONE.is_file():raise FileNotFoundError('Falta Mask R-CNN entrenado; ejecutar notebook 06 con GPU.')\n",
+    "CHECK=json.loads(DONE.read_text(encoding='utf8'))\n",
+    "if CHECK.get('yaml_sha256')!=config_hash(YAML):raise RuntimeError('Cambió el YAML desde entrenamiento. Detener.')\n",
+    "weights_sha=hashlib.sha256(BEST.read_bytes()).hexdigest()\n",
+    "CACHED=RES/'05_Reportes'/'CERDOS_07_Evaluacion_MaskRCNN.json'\n",
+    "EXCEL=RES/'03_Metricas'/'CERDOS_07_Por_Imagen_MaskRCNN.xlsx'\n",
+    "OUT=RES/'02_Segmentacion'/'MaskRCNN_fecha_v1'\n",
+    "OUT.mkdir(parents=True,exist_ok=True)\n",
+    "config=yaml.safe_load(YAML.read_text(encoding='utf8'))\n",
+    "test_list=Path(config['test']).read_text(encoding='utf8').splitlines()\n",
+    "print('TEST imágenes:',len([x for x in test_list if x.strip()]))\n",
+    "if CACHED.exists():\n",
+    "    rec=json.loads(CACHED.read_text(encoding='utf8'))\n",
+    "    if rec['weights_sha256']!=weights_sha or rec['yaml_sha256']!=config_hash(YAML):\n",
+    "        raise RuntimeError('Evaluación existente de otro modelo/configuración. No sobrescribir test.')\n",
+    "    if not EXCEL.is_file():raise FileNotFoundError('Resultados JSON existentes pero Excel incompleto; requiere auditoría, sin recomputar test automáticamente.')\n",
+    "    print('✅ Reutilizando test congelado, sin volver a evaluar.');print(rec)\n",
+    "else:\n",
+    "    device=torch.device('cuda:0')\n",
+    "    model=build_maskrcnn(pretrained=False).to(device)\n",
+    "    model.load_state_dict(torch.load(BEST,map_location='cpu',weights_only=False)['model'])\n",
+    "    test=PigMasks(config['test'])\n",
+    "    metrics,rows=coco_metric_for_model(model,test,device,desc='TEST FINAL',include_rows=True)\n",
+    "    if len(rows)!=len(test):raise RuntimeError('Resultados incompletos por imagen')\n",
+    "    per_date=(rows.groupby('fecha',as_index=False)[['anotaciones_GT','detecciones_conf_025','TP_IoU05','FP_IoU05','FN_IoU05']].sum())\n",
+    "    per_date['precision_iou05']=per_date['TP_IoU05']/(per_date['TP_IoU05']+per_date['FP_IoU05']).replace(0,np.nan)\n",
+    "    per_date['recall_iou05']=per_date['TP_IoU05']/(per_date['TP_IoU05']+per_date['FN_IoU05']).replace(0,np.nan)\n",
+    "    report={'etapa':'07_test_una_vez','fecha_utc':datetime.now(timezone.utc).isoformat(),\n",
+    "        'modelo':'Mask R-CNN ResNet50-FPN','weights_sha256':weights_sha,\n",
+    "        'yaml_sha256':config_hash(YAML),**metrics,'conf_threshold_conteo':0.25,\n",
+    "        'match_iou':0.50,'notas':['El test se separó por fecha; no asegura independencia entre animales o granjas.',\n",
+    "        'Diferencias entre evaluadores COCO y Ultralytics exigen precaución al comparar mAP.',\n",
+    "        'Detecciones por imagen no son animales únicos.']}\n",
+    "    with pd.ExcelWriter(EXCEL,engine='openpyxl') as w:\n",
+    "        pd.DataFrame([report]).to_excel(w,sheet_name='Metricas_test',index=False)\n",
+    "        rows.to_excel(w,sheet_name='Todas_las_imagenes',index=False)\n",
+    "        per_date.to_excel(w,sheet_name='Errores_por_fecha',index=False)\n",
+    "    CACHED.write_text(json.dumps(report,indent=2,ensure_ascii=False),encoding='utf8')\n",
+    "    print('✅ Resultados globales:',metrics)\n",
+    "    # Doce ilustraciones, las demás imágenes sí están incluidas en evaluación cuantitativa.\n",
+    "    ids=np.unique(np.linspace(0,len(test)-1,min(12,len(test)),dtype=int))\n",
+    "    model.eval()\n",
+    "    for j in ids:\n",
+    "        image,gt=test[int(j)]\n",
+    "        with torch.no_grad():pred=model([image.to(device)])[0]\n",
+    "        scores=pred['scores'].detach().cpu().numpy()\n",
+    "        masks=pred['masks'].detach().cpu().numpy()[:,0]>.5 if len(scores) else np.zeros((0,*image.shape[1:]),bool)\n",
+    "        original=(image.permute(1,2,0).numpy()*255).clip(0,255).astype(np.uint8).copy()\n",
+    "        overlay=original.copy();n=0\n",
+    "        for k,s in enumerate(scores):\n",
+    "            if s<0.25:continue\n",
+    "            n+=1\n",
+    "            m=masks[k].astype(bool)\n",
+    "            color=np.asarray([43,165,109],dtype=np.uint8)\n",
+    "            overlay[m]=((overlay[m].astype(np.float32)*.55)+(color*.45)).astype(np.uint8)\n",
+    "        fig,ax=plt.subplots(figsize=(8,5))\n",
+    "        ax.imshow(overlay);ax.axis('off')\n",
+    "        ax.set_title(f'{test.paths[int(j)].name[:38]} | máscaras={n}',fontsize=9)\n",
+    "        fig.tight_layout()\n",
+    "        fig.savefig(OUT/f'{test.paths[int(j)].stem}_maskrcnn.png',dpi=140,bbox_inches='tight')\n",
+    "        plt.close(fig)\n",
+    "    del model; torch.cuda.empty_cache()\n"
+   ],
+   "execution_count": null,
+   "outputs": [],
+   "id": "4a2d47f9c08a"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "colab": {
+     "base_uri": "https://localhost:8080/",
+     "height": 106
+    },
+    "id": "d04c83795183"
+   },
+   "source": [
+    "report=json.loads(CACHED.read_text(encoding='utf8'))\n",
+    "print('Mask R-CNN mAP50 máscaras:',round(report['seg_map50'],4))\n",
+    "print('Mask R-CNN mAP50-95 máscaras:',round(report['seg_map50_95'],4))\n",
+    "print('Instancias anotadas en test:',report['gt'])\n",
+    "from google.colab import files as colab_files\n",
+    "export=EXP/'CERDOS_07_MaskRCNN_Evaluacion.zip'\n",
+    "with zipfile.ZipFile(export,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=6) as z:\n",
+    "    for f in [CACHED,EXCEL]:z.write(f,arcname=f.name)\n",
+    "    for f in sorted(OUT.glob('*.png')):z.write(f,arcname='ejemplos/'+f.name)\n",
+    "print('✅ ZIP guardado:',export)\n",
+    "colab_files.download(str(export))\n"
+   ],
+   "execution_count": null,
+   "outputs": [],
+   "id": "d04c83795183"
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "id": "6c7db258590a"
+   },
+   "source": [
+    "**Siguiente:** ejecutar el notebook **08 Comparación (CPU)**. No usar test para nuevos ajustes de modelos.\n"
+   ],
+   "id": "6c7db258590a"
+  }
+ ],
+ "metadata": {
+  "colab": {
+   "provenance": [],
+   "gpuType": "T4"
+  },
+  "kernelspec": {
+   "display_name": "Python 3",
+   "name": "python3"
+  },
+  "language_info": {
+   "name": "python"
+  },
+  "accelerator": "GPU"
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
