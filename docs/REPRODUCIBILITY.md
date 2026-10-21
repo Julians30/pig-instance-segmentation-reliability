@@ -1,12 +1,16 @@
 # Reproducing the experimental pipeline
 
+## Independent numerical audit — completed
+
+[Independent COCO audit](INDEPENDENT_COCO_AUDIT.md): a separately implemented RLE mask evaluator reproduced **9 global and 45 date-level sets of AP, AP50 and AP75**, a total of **162 scalar comparisons** with maximum deviation 3.33e-16 from Experiment 33. Nine input prediction hashes and the GT file hash were checked against frozen provenance. This is not new inference/training and not an official `pycocotools` rerun; raw mask files are not redistributed here.
+
 ## Verification levels
 
 1. **Static repository verification**: `python scripts/audit_repository.py` checks the frozen manifests, notebooks, JSON results and nine-by-five date structure. This does **not** rerun inference.
-2. **Historical-record verification**: compare weights, test ground truth, prediction JSONs, configuration files and split files against SHA-256 in `results/reports/CERDOS_33_Protocolo.json` and source reports.
+2. **Historical-record verification**: the archived prediction JSON and GT SHA-256 inputs were rechecked in the independent audit; complete checkpoint verification and a fresh environment rerun remain separate.
 3. **Full computational rerun**: obtain FaroPigSeg from its authors, reconstruct the frozen date split, train and select nine models, generate COCO predictions with exactly recorded model settings, and rerun COCOeval. Requires GPU time and matching software.
 
-**Levels 2 and 3 require artifacts that are not wholly hosted in this repository** (data, weights, complete original prediction JSONs) and should never be advertised as satisfied by a green CI badge.
+**Full level 2 / level 3 verification requires artifacts that are not wholly hosted in this repository** (data, weights, complete original prediction JSONs) and should never be advertised as satisfied by a green CI badge.
 
 ## Preparation
 
