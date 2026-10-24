@@ -3,8 +3,9 @@
 [![License: MIT](https://img.shields.io/badge/Code%20License-MIT-blue.svg)](LICENSE)
 [![Dataset: CC BY-NC 4.0](https://img.shields.io/badge/Upstream%20Data-CC%20BY--NC%204.0-lightgrey.svg)](DATA_LICENSE.md)
 [![Repository integrity](https://github.com/Julians30/pig-instance-segmentation-reliability/actions/workflows/repository-audit.yml/badge.svg)](.github/workflows/repository-audit.yml)
+[![Status](https://img.shields.io/badge/Status-Submitted%20%C2%B7%20IBERAMIA%202026-2E6DA4)](https://www.iberamia.org/iberamia/iberamia2026/)
 
-**Research code and documented experimental artifacts** for the manuscript *Multidimensional Reliability of Pig Instance Segmentation: Three Architectures Across Three Training Seeds* (planned submission to *Smart Agricultural Technology*, Elsevier). The manuscript is **not yet published or accepted**.
+**Research code and documented experimental artifacts** for the manuscript *Multidimensional Reliability of Pig Instance Segmentation: Three Architectures Across Three Training Seeds* (submitted to the *19th Ibero-American Conference on Artificial Intelligence*, **IBERAMIA 2026**). The manuscript is **not yet accepted or published**.
 
 **Researchers:** Julián Coronel-Reyes and Alexander Haro-Sarango. The repository includes **34 clean Colab notebooks** (numbered 00–33; notebook 25 is the corrected version), frozen date-disjoint split manifests, records of the nine-seed COCO assessment, manuscript-oriented figures and automated integrity checks.
 
