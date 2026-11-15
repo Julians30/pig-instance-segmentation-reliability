@@ -5,6 +5,7 @@ type: software
 title: Pig Instance Segmentation Reliability Assessment
 license: MIT
 version: 1.0.0
+doi: 10.5281/zenodo.24252738
 date-released: '2026-11-15'
 authors:
   - family-names: Coronel-Reyes
