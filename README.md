@@ -93,6 +93,10 @@ Start with the [reviewer quick-start and claim-to-artifact guide](docs/REVIEWER_
 
 The code publication contains notebook source cells with executed outputs stripped, split files copied byte-for-byte, original small experiment reports, nine-seed summaries and self-checks for counts/date separation/checksums. It does **not** ship model weights, the FaroPigSeg images, ground-truth masks, or a fully containerized end-to-end GPU reproduction. A separate numerical recomputation of archived masks **has** now been completed and published as summary evidence. The original Colab notebooks also include environment-specific paths; details and remaining items are maintained in [`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md).
 
+## Versioned archive
+
+A version 1.0.0 Zenodo deposit has been prepared with the full source snapshot, integrity manifests and supplementary tables S1–S17 / figures S1–S4. **Reserved DOI: `10.5281/zenodo.24252738`; publication is pending and the DOI is not yet registered.** See [archive contents and availability](docs/ZENODO_ARCHIVE.md). This is a software/artifact archive; the associated manuscript remains in preparation for *Machine Vision and Applications*.
+
 ## Code/data availability, citation and licenses
 
 - Project code/documentation: **MIT**, [`LICENSE`](LICENSE). The MIT license does **not** supersede third-party data or model licenses.

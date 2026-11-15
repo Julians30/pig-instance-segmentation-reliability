@@ -1,6 +1,7 @@
 # Changelog
 
 ## 2026-11-15
+- Documented the prepared Zenodo source/supplement archive and reserved DOI, explicitly marked as unpublished pending authorization. Clarified the six deposit files and artifacts required for full reproduction.
 - Notebook 54 completed (9/9 runs, each within 0.26–0.59% of the 60-min L4 budget).
 - Added notebook **55**: Mask R-CNN with a time-based cosine learning-rate schedule (1e-4 to 1e-6), same budget and seeds; completed (3/3 runs).
 - Added notebook **56**: single retrospective test evaluation of the 12 compute-matched checkpoints with the notebook-33 COCO protocol and a bridge check on the original seed-2026 checkpoints (differences ≤ 0.000121).
