@@ -17,7 +17,7 @@ The deposit source archive is the complete tracked snapshot at commit `9e19a5b89
 | ESM_1.pdf | Author-provided supplementary summary tables S1–S17 and figures S1–S4, with corrected equation/archive references and bridge-check note |
 | RELEASE_NOTES.md | Final deposit scope and supplementary-PDF checksum |
 
-The supplement is a record of reported results, not evidence of new training or inference during packaging. Its SHA-256 is `d379c6b709af3c6258af3d8416a3839d7de709410b2bc82f906be449d734140f`. The bridge-check maximum is 0.0001206026; the conservative displayed bound is 0.000121. Those observed discrepancies left the original model order unchanged and do not establish general software-version invariance.
+The supplement is a record of reported results, not evidence of new training or inference during packaging. Its SHA-256 is `71ed9b61db51e4ad4df93f3bdc5084cfc02c7ebe812564a884234887591f0e18` (revised 15 November 2026: table/figure lead text, Eq. 1 reference, bridge-check note and archive paragraph; numerical values unchanged). The bridge-check maximum is 0.0001206026; the conservative displayed bound is 0.000121. Those observed discrepancies left the original model order unchanged and do not establish general software-version invariance.
 
 ## Access boundaries
 

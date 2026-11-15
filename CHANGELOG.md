@@ -1,6 +1,7 @@
 # Changelog
 
 ## 2026-11-15
+- Revised supplement ESM_1.pdf (lead text citing every table and figure; Eq. 1 reference; no numerical changes) and removed the journal name from the README status.
 - Documented the prepared Zenodo source/supplement archive and reserved DOI, explicitly marked as unpublished pending authorization. Clarified the six deposit files and artifacts required for full reproduction.
 - Notebook 54 completed (9/9 runs, each within 0.26–0.59% of the 60-min L4 budget).
 - Added notebook **55**: Mask R-CNN with a time-based cosine learning-rate schedule (1e-4 to 1e-6), same budget and seeds; completed (3/3 runs).

@@ -95,7 +95,7 @@ The code publication contains notebook source cells with executed outputs stripp
 
 ## Versioned archive
 
-A version 1.0.0 Zenodo deposit has been prepared with the full source snapshot, integrity manifests and supplementary tables S1–S17 / figures S1–S4. **Reserved DOI: `10.5281/zenodo.24252738`; publication is pending and the DOI is not yet registered.** See [archive contents and availability](docs/ZENODO_ARCHIVE.md). This is a software/artifact archive; the associated manuscript remains in preparation for *Machine Vision and Applications*.
+A version 1.0.0 Zenodo deposit has been prepared with the full source snapshot, integrity manifests and supplementary tables S1–S17 / figures S1–S4. **Reserved DOI: `10.5281/zenodo.24252738`; publication is pending and the DOI is not yet registered.** See [archive contents and availability](docs/ZENODO_ARCHIVE.md). This is a software/artifact archive; the associated manuscript is in preparation and not yet accepted or published.
 
 ## Code/data availability, citation and licenses
 
