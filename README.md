@@ -4,6 +4,7 @@
 [![Dataset: CC BY-NC 4.0](https://img.shields.io/badge/Upstream%20Data-CC%20BY--NC%204.0-lightgrey.svg)](DATA_LICENSE.md)
 [![Repository integrity](https://github.com/Julians30/pig-instance-segmentation-reliability/actions/workflows/repository-audit.yml/badge.svg)](.github/workflows/repository-audit.yml)
 [![Status](https://img.shields.io/badge/Status-Manuscript%20in%20preparation-2E6DA4)](#)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24252738.svg)](https://doi.org/10.5281/zenodo.24252738)
 
 **Research code and documented experimental artifacts** for the manuscript *Selecting pig instance segmentation models for farm monitoring: compute-matched and date-disjoint evidence from YOLO11, YOLO26 and Mask R-CNN*. The manuscript is **not yet accepted or published**.
 
@@ -95,7 +96,7 @@ The code publication contains notebook source cells with executed outputs stripp
 
 ## Versioned archive
 
-A version 1.0.0 Zenodo deposit has been prepared with the full source snapshot, integrity manifests and supplementary tables S1–S17 / figures S1–S4. **Reserved DOI: `10.5281/zenodo.24252738`; publication is pending and the DOI is not yet registered.** See [archive contents and availability](docs/ZENODO_ARCHIVE.md). This is a software/artifact archive; the associated manuscript is in preparation and not yet accepted or published.
+Version 1.0.0 of this repository is archived in Zenodo: **[https://doi.org/10.5281/zenodo.24252738](https://doi.org/10.5281/zenodo.24252738)** (published 15 November 2026), with the full source snapshot, integrity manifests and supplementary tables S1–S17 / figures S1–S4. See [archive contents and availability](docs/ZENODO_ARCHIVE.md). This is a software/artifact archive; the associated manuscript is in preparation and not yet accepted or published.
 
 ## Code/data availability, citation and licenses
 
