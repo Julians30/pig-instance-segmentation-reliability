@@ -1,7 +1,7 @@
 # Scientific and reproducibility limitations
 
 1. **Single farm/source dataset.** Date-disjoint splitting prevents date overlap but does not test domain shift between farms, cameras or management settings. External-farm validation is a separate future study.
-2. **Unequal training budgets.** YOLO: 60 epochs/batch 8; Mask R-CNN: 12 epochs/batch 1. Validation curves and three seeds support descriptive comparison but cannot identify a pure architectural effect.
+2. **Unequal training budgets.** YOLO: 60 epochs/batch 8; Mask R-CNN: 12 epochs/batch 1. Validation curves and three seeds support descriptive comparison but cannot identify a pure architectural effect. Complementary notebooks 54–56 equalize wall-clock training time on one NVIDIA L4 (60 min per run, three seeds) and add a cosine-LR Mask R-CNN control; the test ranking was unchanged, but equal time is not equal FLOPs or identical recipes, and longer YOLO11n-seg training raised validation AP while lowering test AP.
 3. **Small number of dates.** Only five test acquisition dates. The smallest exact two-sided sign-test p value with five nonzero paired date differences is 0.0625. Treat per-date contrasts descriptively; confidence statements about unseen dates/farms are limited.
 4. **Validation reuse.** The same 196 images were used for checkpoint choice and later calibration/counting thresholds. Threshold/calibration results can be optimistic.
 5. **Retrospectively inspected test.** Test images were consulted in successive exploratory notebooks before the nine-seed summary. Do not label them a prospectively untouched test.

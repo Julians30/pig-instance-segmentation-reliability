@@ -47,9 +47,9 @@ def run():
         actual=hashlib.sha256((splits/name).read_bytes()).hexdigest()
         ck(actual==expected,f'Original split fingerprint mismatch: {name}')
     provenance=json.loads((ROOT/'docs'/'NOTEBOOK_PROVENANCE.json').read_text(encoding='utf-8'))
-    ck(len(provenance)==34,'Expected 34 cleaned notebooks')
+    ck(len(provenance)==37,'Expected 37 cleaned notebooks (00-33 plus complementary 54-56)')
     published=list((ROOT/'notebooks').rglob('*.ipynb'))
-    ck(len(published)==34,f'Expected 34 .ipynb files, got {len(published)}')
+    ck(len(published)==37,f'Expected 37 .ipynb files, got {len(published)}')
     for item in provenance:
         p=ROOT/item['github_path']
         ck(p.exists(),f'Missing notebook {p}')
@@ -82,7 +82,7 @@ def run():
         print('REPOSITORY AUDIT FAILED:',len(errors),'problem(s)')
         for e in errors: print('  ERROR:',e)
         return 1
-    print('PASS: 34 notebooks, zero stored outputs, 25 disjoint dates, 1,518 split images, original SHA-256, 9 COCO runs, 45 per-date entries')
+    print('PASS: 37 notebooks (00-33 + complementary 54-56), zero stored outputs, 25 disjoint dates, 1,518 split images, original SHA-256, 9 COCO runs, 45 per-date entries')
     print('NOTE: Static provenance only; no full training, prediction reconstruction or independent COCOeval performed.')
     return 0
 if __name__=='__main__':sys.exit(run())

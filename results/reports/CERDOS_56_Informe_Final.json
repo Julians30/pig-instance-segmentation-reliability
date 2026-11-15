@@ -1,0 +1,1006 @@
+{
+  "experiment": 56,
+  "created_utc": "2026-11-15T16:45:07.533711+00:00",
+  "protocol": {
+    "experiment": "CERDOS_56_Test_Compute_Matched_v1",
+    "parent_protocol09_sha256": "30add1f1f8340e017d2fbf132ab24a4f32f702db5e2216572bb72c8c57addc95",
+    "ground_truth_sha256": "8baf1fa142ab85b0d0031ce8585afc791e8ccae54de97014f156115521631b00",
+    "test_txt_sha256": "0d31f2b3bc931c6f08c96544df8fdb1f91c3b6bea5da4624917e94da97e01c05",
+    "yaml_sha256": "9a223b47038c661303c1d12a35cbdcb212ed51529c8c773c4c9c66998706d1d9",
+    "manifest_sha256": "27ba2e77c188d360bc5d6cbac2a2e2bf0ec929448ae082e49e583e222ad48cd3",
+    "checkpoint_sha256": {
+      "YOLO11n-seg | 2026": "cc8e48a5165368faf8213b954d1a830d535d59fe13cc0c972d4454247ccb6fc1",
+      "YOLO26n-seg | 2026": "3b82adb98703a78a0696236be123a393e85e672124e83d7f42cbede38e6c49c1",
+      "Mask R-CNN (constant LR) | 2026": "bfad5a03178adf9c21e285731dd3b6fcd09be0169b798d578eb275019054af1e",
+      "Mask R-CNN (cosine LR) | 2026": "a619804d6d91cf66b5e531ebedf6c7cf4aad577a3f1f810e6708c14040b610d3",
+      "YOLO11n-seg | 2027": "a9302adef14ecad997292bd8fee62b0fc909936168c1a6e3563f6b0e6282addd",
+      "YOLO26n-seg | 2027": "095963632751feab426e85e5538da976714476e514bedcb2881d526c70442f77",
+      "Mask R-CNN (constant LR) | 2027": "ec2d1b444b1d5e5e97e2daa5c9b997142038f32e99c2de9dd7d4e1f3f1f78c4b",
+      "Mask R-CNN (cosine LR) | 2027": "cd7599e86589ae25d6e9941a25ae8970fb83611f4a8a0d16a8d7f6bab89da120",
+      "YOLO11n-seg | 2028": "ba4669c59ef9968a0f463fada314b7180c0eb2911cdc9f6b6c2396ea2ec85e11",
+      "YOLO26n-seg | 2028": "9b9cea543f8d60e59ad2e7ae04d6d78e0e7cecb39147806350fcf833f1f77a4e",
+      "Mask R-CNN (constant LR) | 2028": "c8686f2e42385ab4f3391d54be933568a2de981ec7433fc4bddc4cfccb394ae9",
+      "Mask R-CNN (cosine LR) | 2028": "a630bfdfa3fb4c527f490295894254dc483b3548ca9c7f246781b21b0c75da48",
+      "CONTROL YOLO11n-seg original | 2026": "781c3bcf3bd4c1511f0eca5fb1a40c26a20a4dc54ae1de65890f33a7015d804a",
+      "CONTROL YOLO26n-seg original | 2026": "ca7d45d3ec5226ba5d0193fa1dabe49862c75bc667c7685698e5ef31594e72bb",
+      "CONTROL Mask R-CNN original | 2026": "2eeffdf14bdba6550653d05e4b58d7c388e63d68d329ebd415492972f662eb2e"
+    },
+    "test_images": 373,
+    "test_GT_instances": 4648,
+    "test_dates": 5,
+    "coco_eval": {
+      "iouType": "segm",
+      "maxDets": [
+        1,
+        10,
+        100
+      ],
+      "IoU thresholds": "0.50:0.05:0.95"
+    },
+    "inference": {
+      "YOLO": {
+        "imgsz": 640,
+        "conf": 0.001,
+        "iou": 0.7,
+        "max_det": 100,
+        "retina_masks": true,
+        "mask_bin_thresh": 0.5
+      },
+      "Mask R-CNN": {
+        "min_size": 512,
+        "max_size": 768,
+        "score_thresh": 0.001,
+        "detections_per_img": 100,
+        "mask_bin_thresh": 0.5
+      }
+    },
+    "ultralytics": "8.4.213",
+    "selection": "Best checkpoint by validation mask AP (NB54/NB55); test never used for selection or thresholds.",
+    "analysis_status": "retrospective, descriptive; test examined in earlier experiments; evaluated once for these checkpoints"
+  },
+  "protocol_sha256": "ea6a309da6bcf98ecea131b19bd4a993ef0a424bb722cdf5600c0a46a821749f",
+  "software": {
+    "python": "3.13.16",
+    "torch": "2.14.1+cu130",
+    "torchvision": "0.29.1+cu130",
+    "ultralytics": "8.4.213",
+    "gpu": "NVIDIA L4"
+  },
+  "global": [
+    {
+      "Configuration": "YOLO11n-seg",
+      "Seed": 2026,
+      "Predicted_instances": 18903,
+      "Best_val_AP": null,
+      "Mask_AP50_95": 0.8541986479,
+      "Mask_AP50": 0.9273288459,
+      "Mask_AP75": 0.9161792509
+    },
+    {
+      "Configuration": "YOLO26n-seg",
+      "Seed": 2026,
+      "Predicted_instances": 16937,
+      "Best_val_AP": null,
+      "Mask_AP50_95": 0.8431989333,
+      "Mask_AP50": 0.9033683054,
+      "Mask_AP75": 0.8945663326
+    },
+    {
+      "Configuration": "Mask R-CNN (constant LR)",
+      "Seed": 2026,
+      "Predicted_instances": 6227,
+      "Best_val_AP": 0.8227785689,
+      "Mask_AP50_95": 0.8124753601,
+      "Mask_AP50": 0.9044209303,
+      "Mask_AP75": 0.8822095137
+    },
+    {
+      "Configuration": "Mask R-CNN (cosine LR)",
+      "Seed": 2026,
+      "Predicted_instances": 5184,
+      "Best_val_AP": 0.8292024097,
+      "Mask_AP50_95": 0.8037936156,
+      "Mask_AP50": 0.8820636799,
+      "Mask_AP75": 0.8610374414
+    },
+    {
+      "Configuration": "YOLO11n-seg",
+      "Seed": 2027,
+      "Predicted_instances": 21084,
+      "Best_val_AP": 0.87609,
+      "Mask_AP50_95": 0.8522242159,
+      "Mask_AP50": 0.9232606585,
+      "Mask_AP75": 0.9181780596
+    },
+    {
+      "Configuration": "YOLO26n-seg",
+      "Seed": 2027,
+      "Predicted_instances": 15752,
+      "Best_val_AP": 0.86455,
+      "Mask_AP50_95": 0.8521267528,
+      "Mask_AP50": 0.9115244236,
+      "Mask_AP75": 0.9021179411
+    },
+    {
+      "Configuration": "Mask R-CNN (constant LR)",
+      "Seed": 2027,
+      "Predicted_instances": 7752,
+      "Best_val_AP": 0.8192419812,
+      "Mask_AP50_95": 0.7997241056,
+      "Mask_AP50": 0.9098868559,
+      "Mask_AP75": 0.8781912883
+    },
+    {
+      "Configuration": "Mask R-CNN (cosine LR)",
+      "Seed": 2027,
+      "Predicted_instances": 5314,
+      "Best_val_AP": 0.8288409269,
+      "Mask_AP50_95": 0.8085279001,
+      "Mask_AP50": 0.8923844926,
+      "Mask_AP75": 0.8717192209
+    },
+    {
+      "Configuration": "YOLO11n-seg",
+      "Seed": 2028,
+      "Predicted_instances": 13115,
+      "Best_val_AP": 0.87971,
+      "Mask_AP50_95": 0.8586732863,
+      "Mask_AP50": 0.9176318842,
+      "Mask_AP75": 0.9124221905
+    },
+    {
+      "Configuration": "YOLO26n-seg",
+      "Seed": 2028,
+      "Predicted_instances": 15655,
+      "Best_val_AP": 0.86481,
+      "Mask_AP50_95": 0.8489707863,
+      "Mask_AP50": 0.9097888299,
+      "Mask_AP75": 0.9004027132
+    },
+    {
+      "Configuration": "Mask R-CNN (constant LR)",
+      "Seed": 2028,
+      "Predicted_instances": 6162,
+      "Best_val_AP": 0.818931662,
+      "Mask_AP50_95": 0.7951783582,
+      "Mask_AP50": 0.8942961142,
+      "Mask_AP75": 0.8627553281
+    },
+    {
+      "Configuration": "Mask R-CNN (cosine LR)",
+      "Seed": 2028,
+      "Predicted_instances": 5177,
+      "Best_val_AP": 0.8352407867,
+      "Mask_AP50_95": 0.8032093009,
+      "Mask_AP50": 0.8833762164,
+      "Mask_AP75": 0.8622077187
+    },
+    {
+      "Configuration": "CONTROL YOLO11n-seg original",
+      "Seed": 2026,
+      "Predicted_instances": 15963,
+      "Best_val_AP": null,
+      "Mask_AP50_95": 0.8654753117,
+      "Mask_AP50": 0.9279716327,
+      "Mask_AP75": 0.9239694044
+    },
+    {
+      "Configuration": "CONTROL YOLO26n-seg original",
+      "Seed": 2026,
+      "Predicted_instances": 19335,
+      "Best_val_AP": null,
+      "Mask_AP50_95": 0.8495084015,
+      "Mask_AP50": 0.9151241133,
+      "Mask_AP75": 0.9083810946
+    },
+    {
+      "Configuration": "CONTROL Mask R-CNN original",
+      "Seed": 2026,
+      "Predicted_instances": 9797,
+      "Best_val_AP": null,
+      "Mask_AP50_95": 0.7962739826,
+      "Mask_AP50": 0.9191816489,
+      "Mask_AP75": 0.8813029066
+    }
+  ],
+  "per_date": [
+    {
+      "Configuration": "YOLO11n-seg",
+      "Seed": 2026,
+      "Date": "2023-05-24",
+      "Images": 84,
+      "Mask_AP50_95": 0.8990652774,
+      "Mask_AP50": 0.9438029084,
+      "Mask_AP75": 0.9402414284
+    },
+    {
+      "Configuration": "YOLO11n-seg",
+      "Seed": 2026,
+      "Date": "2023-08-21",
+      "Images": 105,
+      "Mask_AP50_95": 0.8462340565,
+      "Mask_AP50": 0.9223550192,
+      "Mask_AP75": 0.9088946246
+    },
+    {
+      "Configuration": "YOLO11n-seg",
+      "Seed": 2026,
+      "Date": "2023-08-25",
+      "Images": 60,
+      "Mask_AP50_95": 0.8410433313,
+      "Mask_AP50": 0.9268759699,
+      "Mask_AP75": 0.9131885231
+    },
+    {
+      "Configuration": "YOLO11n-seg",
+      "Seed": 2026,
+      "Date": "2023-08-29",
+      "Images": 57,
+      "Mask_AP50_95": 0.8585645218,
+      "Mask_AP50": 0.9350213589,
+      "Mask_AP75": 0.9249963194
+    },
+    {
+      "Configuration": "YOLO11n-seg",
+      "Seed": 2026,
+      "Date": "2023-08-31",
+      "Images": 67,
+      "Mask_AP50_95": 0.859914316,
+      "Mask_AP50": 0.9406137265,
+      "Mask_AP75": 0.926502754
+    },
+    {
+      "Configuration": "YOLO26n-seg",
+      "Seed": 2026,
+      "Date": "2023-05-24",
+      "Images": 84,
+      "Mask_AP50_95": 0.8978972162,
+      "Mask_AP50": 0.9386561336,
+      "Mask_AP75": 0.9353734469
+    },
+    {
+      "Configuration": "YOLO26n-seg",
+      "Seed": 2026,
+      "Date": "2023-08-21",
+      "Images": 105,
+      "Mask_AP50_95": 0.8305895657,
+      "Mask_AP50": 0.896688527,
+      "Mask_AP75": 0.8867083399
+    },
+    {
+      "Configuration": "YOLO26n-seg",
+      "Seed": 2026,
+      "Date": "2023-08-25",
+      "Images": 60,
+      "Mask_AP50_95": 0.8367180682,
+      "Mask_AP50": 0.9025650541,
+      "Mask_AP75": 0.8979108397
+    },
+    {
+      "Configuration": "YOLO26n-seg",
+      "Seed": 2026,
+      "Date": "2023-08-29",
+      "Images": 57,
+      "Mask_AP50_95": 0.8207816196,
+      "Mask_AP50": 0.887343762,
+      "Mask_AP75": 0.8717284356
+    },
+    {
+      "Configuration": "YOLO26n-seg",
+      "Seed": 2026,
+      "Date": "2023-08-31",
+      "Images": 67,
+      "Mask_AP50_95": 0.8542965309,
+      "Mask_AP50": 0.9186942513,
+      "Mask_AP75": 0.9085699997
+    },
+    {
+      "Configuration": "Mask R-CNN (constant LR)",
+      "Seed": 2026,
+      "Date": "2023-05-24",
+      "Images": 84,
+      "Mask_AP50_95": 0.8169123548,
+      "Mask_AP50": 0.9029961149,
+      "Mask_AP75": 0.89222123
+    },
+    {
+      "Configuration": "Mask R-CNN (constant LR)",
+      "Seed": 2026,
+      "Date": "2023-08-21",
+      "Images": 105,
+      "Mask_AP50_95": 0.810146129,
+      "Mask_AP50": 0.9040442186,
+      "Mask_AP75": 0.8834472155
+    },
+    {
+      "Configuration": "Mask R-CNN (constant LR)",
+      "Seed": 2026,
+      "Date": "2023-08-25",
+      "Images": 60,
+      "Mask_AP50_95": 0.8026345384,
+      "Mask_AP50": 0.9044353686,
+      "Mask_AP75": 0.8824252903
+    },
+    {
+      "Configuration": "Mask R-CNN (constant LR)",
+      "Seed": 2026,
+      "Date": "2023-08-29",
+      "Images": 57,
+      "Mask_AP50_95": 0.8176978359,
+      "Mask_AP50": 0.9134749237,
+      "Mask_AP75": 0.8793829935
+    },
+    {
+      "Configuration": "Mask R-CNN (constant LR)",
+      "Seed": 2026,
+      "Date": "2023-08-31",
+      "Images": 67,
+      "Mask_AP50_95": 0.8228813334,
+      "Mask_AP50": 0.9197181463,
+      "Mask_AP75": 0.8873335781
+    },
+    {
+      "Configuration": "Mask R-CNN (cosine LR)",
+      "Seed": 2026,
+      "Date": "2023-05-24",
+      "Images": 84,
+      "Mask_AP50_95": 0.7945434202,
+      "Mask_AP50": 0.8637432183,
+      "Mask_AP75": 0.8532605172
+    },
+    {
+      "Configuration": "Mask R-CNN (cosine LR)",
+      "Seed": 2026,
+      "Date": "2023-08-21",
+      "Images": 105,
+      "Mask_AP50_95": 0.7999483986,
+      "Mask_AP50": 0.8822983054,
+      "Mask_AP75": 0.8611493244
+    },
+    {
+      "Configuration": "Mask R-CNN (cosine LR)",
+      "Seed": 2026,
+      "Date": "2023-08-25",
+      "Images": 60,
+      "Mask_AP50_95": 0.8010836914,
+      "Mask_AP50": 0.8883209748,
+      "Mask_AP75": 0.8764351396
+    },
+    {
+      "Configuration": "Mask R-CNN (cosine LR)",
+      "Seed": 2026,
+      "Date": "2023-08-29",
+      "Images": 57,
+      "Mask_AP50_95": 0.8273469858,
+      "Mask_AP50": 0.905973681,
+      "Mask_AP75": 0.8848320433
+    },
+    {
+      "Configuration": "Mask R-CNN (cosine LR)",
+      "Seed": 2026,
+      "Date": "2023-08-31",
+      "Images": 67,
+      "Mask_AP50_95": 0.8206194331,
+      "Mask_AP50": 0.9061165199,
+      "Mask_AP75": 0.8834288942
+    },
+    {
+      "Configuration": "YOLO11n-seg",
+      "Seed": 2027,
+      "Date": "2023-05-24",
+      "Images": 84,
+      "Mask_AP50_95": 0.9055694612,
+      "Mask_AP50": 0.9503097078,
+      "Mask_AP75": 0.9480725497
+    },
+    {
+      "Configuration": "YOLO11n-seg",
+      "Seed": 2027,
+      "Date": "2023-08-21",
+      "Images": 105,
+      "Mask_AP50_95": 0.8477207621,
+      "Mask_AP50": 0.9247774606,
+      "Mask_AP75": 0.9155487666
+    },
+    {
+      "Configuration": "YOLO11n-seg",
+      "Seed": 2027,
+      "Date": "2023-08-25",
+      "Images": 60,
+      "Mask_AP50_95": 0.8373902599,
+      "Mask_AP50": 0.923287189,
+      "Mask_AP75": 0.9151304007
+    },
+    {
+      "Configuration": "YOLO11n-seg",
+      "Seed": 2027,
+      "Date": "2023-08-29",
+      "Images": 57,
+      "Mask_AP50_95": 0.8345135283,
+      "Mask_AP50": 0.908486847,
+      "Mask_AP75": 0.8988766334
+    },
+    {
+      "Configuration": "YOLO11n-seg",
+      "Seed": 2027,
+      "Date": "2023-08-31",
+      "Images": 67,
+      "Mask_AP50_95": 0.8654374103,
+      "Mask_AP50": 0.9417232924,
+      "Mask_AP75": 0.928878096
+    },
+    {
+      "Configuration": "YOLO26n-seg",
+      "Seed": 2027,
+      "Date": "2023-05-24",
+      "Images": 84,
+      "Mask_AP50_95": 0.8971110736,
+      "Mask_AP50": 0.937554642,
+      "Mask_AP75": 0.9331696011
+    },
+    {
+      "Configuration": "YOLO26n-seg",
+      "Seed": 2027,
+      "Date": "2023-08-21",
+      "Images": 105,
+      "Mask_AP50_95": 0.8461871373,
+      "Mask_AP50": 0.910974479,
+      "Mask_AP75": 0.9007600946
+    },
+    {
+      "Configuration": "YOLO26n-seg",
+      "Seed": 2027,
+      "Date": "2023-08-25",
+      "Images": 60,
+      "Mask_AP50_95": 0.8399950105,
+      "Mask_AP50": 0.9090550692,
+      "Mask_AP75": 0.9012605963
+    },
+    {
+      "Configuration": "YOLO26n-seg",
+      "Seed": 2027,
+      "Date": "2023-08-29",
+      "Images": 57,
+      "Mask_AP50_95": 0.8324796467,
+      "Mask_AP50": 0.8945920425,
+      "Mask_AP75": 0.8834494502
+    },
+    {
+      "Configuration": "YOLO26n-seg",
+      "Seed": 2027,
+      "Date": "2023-08-31",
+      "Images": 67,
+      "Mask_AP50_95": 0.8715292461,
+      "Mask_AP50": 0.9313439544,
+      "Mask_AP75": 0.9261328404
+    },
+    {
+      "Configuration": "Mask R-CNN (constant LR)",
+      "Seed": 2027,
+      "Date": "2023-05-24",
+      "Images": 84,
+      "Mask_AP50_95": 0.8044057417,
+      "Mask_AP50": 0.9006737319,
+      "Mask_AP75": 0.8809097174
+    },
+    {
+      "Configuration": "Mask R-CNN (constant LR)",
+      "Seed": 2027,
+      "Date": "2023-08-21",
+      "Images": 105,
+      "Mask_AP50_95": 0.7979518699,
+      "Mask_AP50": 0.9020608053,
+      "Mask_AP75": 0.8767462002
+    },
+    {
+      "Configuration": "Mask R-CNN (constant LR)",
+      "Seed": 2027,
+      "Date": "2023-08-25",
+      "Images": 60,
+      "Mask_AP50_95": 0.7917953395,
+      "Mask_AP50": 0.9060259142,
+      "Mask_AP75": 0.8754110787
+    },
+    {
+      "Configuration": "Mask R-CNN (constant LR)",
+      "Seed": 2027,
+      "Date": "2023-08-29",
+      "Images": 57,
+      "Mask_AP50_95": 0.8058978318,
+      "Mask_AP50": 0.9134382388,
+      "Mask_AP75": 0.8806811496
+    },
+    {
+      "Configuration": "Mask R-CNN (constant LR)",
+      "Seed": 2027,
+      "Date": "2023-08-31",
+      "Images": 67,
+      "Mask_AP50_95": 0.8199017336,
+      "Mask_AP50": 0.9336543628,
+      "Mask_AP75": 0.9068005621
+    },
+    {
+      "Configuration": "Mask R-CNN (cosine LR)",
+      "Seed": 2027,
+      "Date": "2023-05-24",
+      "Images": 84,
+      "Mask_AP50_95": 0.7962390222,
+      "Mask_AP50": 0.8688376646,
+      "Mask_AP75": 0.858424187
+    },
+    {
+      "Configuration": "Mask R-CNN (cosine LR)",
+      "Seed": 2027,
+      "Date": "2023-08-21",
+      "Images": 105,
+      "Mask_AP50_95": 0.8071449963,
+      "Mask_AP50": 0.8895859816,
+      "Mask_AP75": 0.8699325429
+    },
+    {
+      "Configuration": "Mask R-CNN (cosine LR)",
+      "Seed": 2027,
+      "Date": "2023-08-25",
+      "Images": 60,
+      "Mask_AP50_95": 0.8100174978,
+      "Mask_AP50": 0.8972742317,
+      "Mask_AP75": 0.8779265446
+    },
+    {
+      "Configuration": "Mask R-CNN (cosine LR)",
+      "Seed": 2027,
+      "Date": "2023-08-29",
+      "Images": 57,
+      "Mask_AP50_95": 0.8239578208,
+      "Mask_AP50": 0.9114190336,
+      "Mask_AP75": 0.8819707584
+    },
+    {
+      "Configuration": "Mask R-CNN (cosine LR)",
+      "Seed": 2027,
+      "Date": "2023-08-31",
+      "Images": 67,
+      "Mask_AP50_95": 0.8176971429,
+      "Mask_AP50": 0.9019796099,
+      "Mask_AP75": 0.8855804015
+    },
+    {
+      "Configuration": "YOLO11n-seg",
+      "Seed": 2028,
+      "Date": "2023-05-24",
+      "Images": 84,
+      "Mask_AP50_95": 0.9079258488,
+      "Mask_AP50": 0.9440293537,
+      "Mask_AP75": 0.9427692264
+    },
+    {
+      "Configuration": "YOLO11n-seg",
+      "Seed": 2028,
+      "Date": "2023-08-21",
+      "Images": 105,
+      "Mask_AP50_95": 0.8476877779,
+      "Mask_AP50": 0.9103458055,
+      "Mask_AP75": 0.9009535445
+    },
+    {
+      "Configuration": "YOLO11n-seg",
+      "Seed": 2028,
+      "Date": "2023-08-25",
+      "Images": 60,
+      "Mask_AP50_95": 0.8485666416,
+      "Mask_AP50": 0.9208002734,
+      "Mask_AP75": 0.9132609241
+    },
+    {
+      "Configuration": "YOLO11n-seg",
+      "Seed": 2028,
+      "Date": "2023-08-29",
+      "Images": 57,
+      "Mask_AP50_95": 0.8458462886,
+      "Mask_AP50": 0.9088754328,
+      "Mask_AP75": 0.9014799135
+    },
+    {
+      "Configuration": "YOLO11n-seg",
+      "Seed": 2028,
+      "Date": "2023-08-31",
+      "Images": 67,
+      "Mask_AP50_95": 0.8646297568,
+      "Mask_AP50": 0.926903582,
+      "Mask_AP75": 0.916626255
+    },
+    {
+      "Configuration": "YOLO26n-seg",
+      "Seed": 2028,
+      "Date": "2023-05-24",
+      "Images": 84,
+      "Mask_AP50_95": 0.8906827989,
+      "Mask_AP50": 0.933318299,
+      "Mask_AP75": 0.9287265247
+    },
+    {
+      "Configuration": "YOLO26n-seg",
+      "Seed": 2028,
+      "Date": "2023-08-21",
+      "Images": 105,
+      "Mask_AP50_95": 0.8435011832,
+      "Mask_AP50": 0.90927808,
+      "Mask_AP75": 0.9004645803
+    },
+    {
+      "Configuration": "YOLO26n-seg",
+      "Seed": 2028,
+      "Date": "2023-08-25",
+      "Images": 60,
+      "Mask_AP50_95": 0.8444078006,
+      "Mask_AP50": 0.9137661417,
+      "Mask_AP75": 0.908302274
+    },
+    {
+      "Configuration": "YOLO26n-seg",
+      "Seed": 2028,
+      "Date": "2023-08-29",
+      "Images": 57,
+      "Mask_AP50_95": 0.8309341242,
+      "Mask_AP50": 0.8968204178,
+      "Mask_AP75": 0.879872315
+    },
+    {
+      "Configuration": "YOLO26n-seg",
+      "Seed": 2028,
+      "Date": "2023-08-31",
+      "Images": 67,
+      "Mask_AP50_95": 0.8643564489,
+      "Mask_AP50": 0.9300259571,
+      "Mask_AP75": 0.9197167396
+    },
+    {
+      "Configuration": "Mask R-CNN (constant LR)",
+      "Seed": 2028,
+      "Date": "2023-05-24",
+      "Images": 84,
+      "Mask_AP50_95": 0.8006596699,
+      "Mask_AP50": 0.8882146354,
+      "Mask_AP75": 0.8654133534
+    },
+    {
+      "Configuration": "Mask R-CNN (constant LR)",
+      "Seed": 2028,
+      "Date": "2023-08-21",
+      "Images": 105,
+      "Mask_AP50_95": 0.7959622883,
+      "Mask_AP50": 0.8931691401,
+      "Mask_AP75": 0.8639868546
+    },
+    {
+      "Configuration": "Mask R-CNN (constant LR)",
+      "Seed": 2028,
+      "Date": "2023-08-25",
+      "Images": 60,
+      "Mask_AP50_95": 0.7784545858,
+      "Mask_AP50": 0.8855602872,
+      "Mask_AP75": 0.848817945
+    },
+    {
+      "Configuration": "Mask R-CNN (constant LR)",
+      "Seed": 2028,
+      "Date": "2023-08-29",
+      "Images": 57,
+      "Mask_AP50_95": 0.8142775925,
+      "Mask_AP50": 0.9155925143,
+      "Mask_AP75": 0.883594864
+    },
+    {
+      "Configuration": "Mask R-CNN (constant LR)",
+      "Seed": 2028,
+      "Date": "2023-08-31",
+      "Images": 67,
+      "Mask_AP50_95": 0.8100436667,
+      "Mask_AP50": 0.9117099911,
+      "Mask_AP75": 0.8783739969
+    },
+    {
+      "Configuration": "Mask R-CNN (cosine LR)",
+      "Seed": 2028,
+      "Date": "2023-05-24",
+      "Images": 84,
+      "Mask_AP50_95": 0.7852211347,
+      "Mask_AP50": 0.8568499743,
+      "Mask_AP75": 0.8471378506
+    },
+    {
+      "Configuration": "Mask R-CNN (cosine LR)",
+      "Seed": 2028,
+      "Date": "2023-08-21",
+      "Images": 105,
+      "Mask_AP50_95": 0.8065919926,
+      "Mask_AP50": 0.8881969754,
+      "Mask_AP75": 0.8682245862
+    },
+    {
+      "Configuration": "Mask R-CNN (cosine LR)",
+      "Seed": 2028,
+      "Date": "2023-08-25",
+      "Images": 60,
+      "Mask_AP50_95": 0.7932617391,
+      "Mask_AP50": 0.877133269,
+      "Mask_AP75": 0.8539849682
+    },
+    {
+      "Configuration": "Mask R-CNN (cosine LR)",
+      "Seed": 2028,
+      "Date": "2023-08-29",
+      "Images": 57,
+      "Mask_AP50_95": 0.8297992377,
+      "Mask_AP50": 0.915552166,
+      "Mask_AP75": 0.8846364655
+    },
+    {
+      "Configuration": "Mask R-CNN (cosine LR)",
+      "Seed": 2028,
+      "Date": "2023-08-31",
+      "Images": 67,
+      "Mask_AP50_95": 0.8189237634,
+      "Mask_AP50": 0.9017217609,
+      "Mask_AP75": 0.8796684533
+    },
+    {
+      "Configuration": "CONTROL YOLO11n-seg original",
+      "Seed": 2026,
+      "Date": "2023-05-24",
+      "Images": 84,
+      "Mask_AP50_95": 0.9050603761,
+      "Mask_AP50": 0.9420066866,
+      "Mask_AP75": 0.9405180373
+    },
+    {
+      "Configuration": "CONTROL YOLO11n-seg original",
+      "Seed": 2026,
+      "Date": "2023-08-21",
+      "Images": 105,
+      "Mask_AP50_95": 0.8630669117,
+      "Mask_AP50": 0.9290631918,
+      "Mask_AP75": 0.9236434521
+    },
+    {
+      "Configuration": "CONTROL YOLO11n-seg original",
+      "Seed": 2026,
+      "Date": "2023-08-25",
+      "Images": 60,
+      "Mask_AP50_95": 0.845903518,
+      "Mask_AP50": 0.921953406,
+      "Mask_AP75": 0.914108585
+    },
+    {
+      "Configuration": "CONTROL YOLO11n-seg original",
+      "Seed": 2026,
+      "Date": "2023-08-29",
+      "Images": 57,
+      "Mask_AP50_95": 0.8483842984,
+      "Mask_AP50": 0.9173105142,
+      "Mask_AP75": 0.9070676127
+    },
+    {
+      "Configuration": "CONTROL YOLO11n-seg original",
+      "Seed": 2026,
+      "Date": "2023-08-31",
+      "Images": 67,
+      "Mask_AP50_95": 0.882915378,
+      "Mask_AP50": 0.9513476995,
+      "Mask_AP75": 0.9421956609
+    },
+    {
+      "Configuration": "CONTROL YOLO26n-seg original",
+      "Seed": 2026,
+      "Date": "2023-05-24",
+      "Images": 84,
+      "Mask_AP50_95": 0.8962880605,
+      "Mask_AP50": 0.9387526758,
+      "Mask_AP75": 0.9347962919
+    },
+    {
+      "Configuration": "CONTROL YOLO26n-seg original",
+      "Seed": 2026,
+      "Date": "2023-08-21",
+      "Images": 105,
+      "Mask_AP50_95": 0.8430960567,
+      "Mask_AP50": 0.9163577966,
+      "Mask_AP75": 0.9060004349
+    },
+    {
+      "Configuration": "CONTROL YOLO26n-seg original",
+      "Seed": 2026,
+      "Date": "2023-08-25",
+      "Images": 60,
+      "Mask_AP50_95": 0.8378992859,
+      "Mask_AP50": 0.9148083992,
+      "Mask_AP75": 0.905966596
+    },
+    {
+      "Configuration": "CONTROL YOLO26n-seg original",
+      "Seed": 2026,
+      "Date": "2023-08-29",
+      "Images": 57,
+      "Mask_AP50_95": 0.8364130556,
+      "Mask_AP50": 0.9021848196,
+      "Mask_AP75": 0.8904382985
+    },
+    {
+      "Configuration": "CONTROL YOLO26n-seg original",
+      "Seed": 2026,
+      "Date": "2023-08-31",
+      "Images": 67,
+      "Mask_AP50_95": 0.862184477,
+      "Mask_AP50": 0.9311051064,
+      "Mask_AP75": 0.9218003861
+    },
+    {
+      "Configuration": "CONTROL Mask R-CNN original",
+      "Seed": 2026,
+      "Date": "2023-05-24",
+      "Images": 84,
+      "Mask_AP50_95": 0.7981911266,
+      "Mask_AP50": 0.9105477179,
+      "Mask_AP75": 0.8789993604
+    },
+    {
+      "Configuration": "CONTROL Mask R-CNN original",
+      "Seed": 2026,
+      "Date": "2023-08-21",
+      "Images": 105,
+      "Mask_AP50_95": 0.8028324579,
+      "Mask_AP50": 0.922883875,
+      "Mask_AP75": 0.8945768371
+    },
+    {
+      "Configuration": "CONTROL Mask R-CNN original",
+      "Seed": 2026,
+      "Date": "2023-08-25",
+      "Images": 60,
+      "Mask_AP50_95": 0.7869797757,
+      "Mask_AP50": 0.9222479106,
+      "Mask_AP75": 0.8807809499
+    },
+    {
+      "Configuration": "CONTROL Mask R-CNN original",
+      "Seed": 2026,
+      "Date": "2023-08-29",
+      "Images": 57,
+      "Mask_AP50_95": 0.8056134059,
+      "Mask_AP50": 0.9211025327,
+      "Mask_AP75": 0.8832595131
+    },
+    {
+      "Configuration": "CONTROL Mask R-CNN original",
+      "Seed": 2026,
+      "Date": "2023-08-31",
+      "Images": 67,
+      "Mask_AP50_95": 0.80186125,
+      "Mask_AP50": 0.9260201398,
+      "Mask_AP75": 0.8893630054
+    }
+  ],
+  "summary": [
+    {
+      "Configuration": "YOLO11n-seg",
+      "Mask_AP50_95_mean": 0.85503205,
+      "Mask_AP50_95_sd": 0.0033043224,
+      "Mask_AP50_mean": 0.9227404629,
+      "Mask_AP50_sd": 0.0048693654,
+      "Mask_AP75_mean": 0.915593167,
+      "Mask_AP75_sd": 0.0029223497,
+      "AP50_95_seeds": "0.8542 / 0.8522 / 0.8587",
+      "Original_recipe_mean": 0.8633028624,
+      "Change_vs_original_points": -0.8270812355
+    },
+    {
+      "Configuration": "YOLO26n-seg",
+      "Mask_AP50_95_mean": 0.8480988241,
+      "Mask_AP50_95_sd": 0.0045273313,
+      "Mask_AP50_mean": 0.9082271863,
+      "Mask_AP50_sd": 0.0042964653,
+      "Mask_AP75_mean": 0.8990289956,
+      "Mask_AP75_sd": 0.0039587905,
+      "AP50_95_seeds": "0.8432 / 0.8521 / 0.8490",
+      "Original_recipe_mean": 0.8473598925,
+      "Change_vs_original_points": 0.0738931642
+    },
+    {
+      "Configuration": "Mask R-CNN (constant LR)",
+      "Mask_AP50_95_mean": 0.8024592746,
+      "Mask_AP50_95_sd": 0.0089670191,
+      "Mask_AP50_mean": 0.9028679668,
+      "Mask_AP50_sd": 0.0079105359,
+      "Mask_AP75_mean": 0.8743853767,
+      "Mask_AP75_sd": 0.0102703484,
+      "AP50_95_seeds": "0.8125 / 0.7997 / 0.7952",
+      "Original_recipe_mean": 0.7947343129,
+      "Change_vs_original_points": 0.7724961765
+    },
+    {
+      "Configuration": "Mask R-CNN (cosine LR)",
+      "Mask_AP50_95_mean": 0.8051769389,
+      "Mask_AP50_95_sd": 0.0029166868,
+      "Mask_AP50_mean": 0.885941463,
+      "Mask_AP50_sd": 0.0056182881,
+      "Mask_AP75_mean": 0.864988127,
+      "Mask_AP75_sd": 0.0058585925,
+      "AP50_95_seeds": "0.8038 / 0.8085 / 0.8032",
+      "Original_recipe_mean": 0.7947343129,
+      "Change_vs_original_points": 1.0442625981
+    }
+  ],
+  "differences": [
+    {
+      "Comparison": "YOLO11n-seg minus Mask R-CNN (constant LR)",
+      "Mean_difference_points": 5.2572775356,
+      "Per_seed_points": "+4.17 / +5.25 / +6.35",
+      "Same_sign_all_seeds": true
+    },
+    {
+      "Comparison": "YOLO11n-seg minus Mask R-CNN (cosine LR)",
+      "Mean_difference_points": 4.9855111141,
+      "Per_seed_points": "+5.04 / +4.37 / +5.55",
+      "Same_sign_all_seeds": true
+    },
+    {
+      "Comparison": "YOLO26n-seg minus Mask R-CNN (cosine LR)",
+      "Mean_difference_points": 4.2921885272,
+      "Per_seed_points": "+3.94 / +4.36 / +4.58",
+      "Same_sign_all_seeds": true
+    },
+    {
+      "Comparison": "YOLO11n-seg minus YOLO26n-seg",
+      "Mean_difference_points": 0.6933225869,
+      "Per_seed_points": "+1.10 / +0.01 / +0.97",
+      "Same_sign_all_seeds": true
+    },
+    {
+      "Comparison": "Mask R-CNN (cosine LR) minus Mask R-CNN (constant LR)",
+      "Mean_difference_points": 0.2717664216,
+      "Per_seed_points": "-0.87 / +0.88 / +0.80",
+      "Same_sign_all_seeds": false
+    }
+  ],
+  "bridge_check": [
+    {
+      "Model": "YOLO11n-seg (seed 2026)",
+      "Archived_AP_NB33": 0.8654527486,
+      "Re-inferred_AP_NB56": 0.8654753117,
+      "Difference": 2.25631e-05,
+      "Status": "OK"
+    },
+    {
+      "Model": "YOLO26n-seg (seed 2026)",
+      "Archived_AP_NB33": 0.8495084015,
+      "Re-inferred_AP_NB56": 0.8495084015,
+      "Difference": 0.0,
+      "Status": "OK"
+    },
+    {
+      "Model": "Mask R-CNN (seed 2026)",
+      "Archived_AP_NB33": 0.79615338,
+      "Re-inferred_AP_NB56": 0.7962739826,
+      "Difference": 0.0001206026,
+      "Status": "OK"
+    }
+  ],
+  "prediction_sha256": {
+    "YOLO11n-seg | 2026": "b3ab4a89b01e40008730b98978eaf441d5ae98f22156467c1a1d4d739590e891",
+    "YOLO26n-seg | 2026": "c92cea6f3c101228573110225160a8dd63ffcac70b788745b2d1d3dc2e9722b3",
+    "Mask R-CNN (constant LR) | 2026": "90a68457fdaafdc9a1860ce3078132571a496cb92019a0acf6ded633719a5726",
+    "Mask R-CNN (cosine LR) | 2026": "cb02a58aa1d9f1b4c803cc450aa731f607a8c9ede292e15aacab4d6ebece3525",
+    "YOLO11n-seg | 2027": "b23131b628a6a17a84c20aebf47049452c26bf5da9f235407ff13a68ac21b3bb",
+    "YOLO26n-seg | 2027": "97baf608ea7f4529456b91f6fef75ed1b6e99b785d2fe8b5816bcfab5e0c7e4b",
+    "Mask R-CNN (constant LR) | 2027": "5b0b40ea6094b5d5af655fc653a8deee38a9e6f393cf288e2496a7fabcf1693e",
+    "Mask R-CNN (cosine LR) | 2027": "0f5c2150df0918fec0347b5c2cf5ba27506a775a5f946fd24c07f2434a564b9f",
+    "YOLO11n-seg | 2028": "d492baeda9da21dd46e665d9e094abcd5258d6a724943c85fea0a832710d2e01",
+    "YOLO26n-seg | 2028": "88a5f7fb171e5f9aef995f787dcd80938122e403d2d7cbd43984efb8e147c930",
+    "Mask R-CNN (constant LR) | 2028": "8d13eb79a26a964510563f21c824cd4886c1960bf386854fc5cc6bded0fa0ed7",
+    "Mask R-CNN (cosine LR) | 2028": "d4c15877c728a391797be6e225821b5f934bd867e01b805353ec3c7aa66abc40",
+    "CONTROL YOLO11n-seg original | 2026": "c9b1201b712c7bde263e1f4ac85fd14aacaced262c6f2b2949e29647e0778ee8",
+    "CONTROL YOLO26n-seg original | 2026": "886d2c3d171a78f710dea8f4a665260878c818b8288c39f1988d425c88a63d9a",
+    "CONTROL Mask R-CNN original | 2026": "da6cd74d7a897ecca13352b40b8b8a50a08225ec8a71358b1c703f767915e382"
+  },
+  "test_is_new_independent_validation": false
+}

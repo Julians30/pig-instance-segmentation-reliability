@@ -5,7 +5,7 @@
 ## Read this first
 
 1. [Main README](../README.md): scope, headline COCO results and boundaries.
-2. [Notebook index](NOTEBOOK_INDEX.md): **34 sequential notebooks** (00–33, with the corrected canonical notebook 25) grouped by function.
+2. [Notebook index](NOTEBOOK_INDEX.md): **34 sequential notebooks** (00–33, with the corrected canonical notebook 25) grouped by function, plus the complementary compute-matched notebooks 54–56 (completed).
 3. [Reproduction instructions](REPRODUCIBILITY.md): data setup, original Drive-path handling and run sequence.
 4. [Environment provenance](../environment/README.md): versions and unequal compute budgets.
 5. [Limitations](KNOWN_LIMITATIONS.md): single source farm, five independent test dates, validation reuse and retrospective analyses.
@@ -23,7 +23,7 @@ A standalone Python/NumPy implementation has recomputed COCO mask AP from nine s
 | Nine trained configurations (3 architectures × 3 seeds) | 03, 06, 22, 31, 32 | `results/reports/CERDOS_31_Training_Report.json`, `CERDOS_32_Training_Report.json`, `docs/NOTEBOOK_PROVENANCE.json` | Training records published; checkpoints not hosted |
 | Harmonized COCO mask AP on 373 test images / 4,648 ground-truth instances | 09, 23, **33** | `results/reports/CERDOS_33_Informe_Final.json`, `CERDOS_33_Protocolo.json`, `results/tables/CERDOS_33_COCO_9_Semillas.xlsx` | 9-run results independently recalculated by separate NumPy COCO-style RLE evaluator; raw predictions/GT not all hosted; official pycocotools rerun not completed |
 | Descriptive differences by acquisition date (5 dates) | 10, 17, 18, 23, **33** | `results/tables/CERDOS_33_per_date_metrics.csv`, `results/figures/CERDOS_33_AP_By_Date.png` | Date-level records audited; five dates cannot support strong unseen-farm inference |
-| Training and validation trajectories | 03, 06, 22, 31, 32 | Validation records in training reports; original full logs in Drive | Different epochs, batch sizes and runtimes; not a compute-matched architecture study |
+| Training and validation trajectories | 03, 06, 22, 31, 32 | Validation records in training reports; original full logs in Drive | Different epochs, batch sizes and runtimes; not a compute-matched architecture study. Complementary notebooks 54–56 (equal L4 training time, cosine-LR control, single retrospective test evaluation) report a compute-matched sensitivity analysis |
 | Geometry, runtime and model outputs | 11, 12, 19 | Relevant notebook code | Architecture- and device-specific, not an edge-deployment validation |
 | Confidence calibration (2026 configurations) | 13, 14, 16, 21 | Notebook code and corresponding historical Drive reports | Original-model-only; not nine-seed calibration |
 | Counting thresholds and detection errors | 15, 24–30 | Notebook code | Validation tuning, retrospective test diagnostics, not prospective threshold confirmation |
@@ -37,7 +37,7 @@ cd pig-instance-segmentation-reliability
 python scripts/audit_repository.py
 ```
 
-The expected **PASS** verifies the manifest/date partition, SHA-256 fingerprints, 34 clean notebooks and 9 global/45 date-level reported COCO entries. It does **not** verify that the archived scores are correct by recomputing mask overlaps.
+The expected **PASS** verifies the manifest/date partition, SHA-256 fingerprints, 37 clean notebooks (00–33 plus 54–56) and 9 global/45 date-level reported COCO entries. It does **not** verify that the archived scores are correct by recomputing mask overlaps.
 
 ## Full computational reproduction is a separate level
 

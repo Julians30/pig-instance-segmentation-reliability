@@ -4,11 +4,17 @@ message: >-
 type: software
 title: Pig Instance Segmentation Reliability Assessment
 license: MIT
+version: 1.0.0
+date-released: '2026-11-15'
 authors:
   - family-names: Coronel-Reyes
     given-names: Julián
+    orcid: 'https://orcid.org/0000-0002-7883-5388'
+    affiliation: Universidad Técnica de Machala
   - family-names: Haro-Sarango
     given-names: Alexander
+    orcid: 'https://orcid.org/0000-0001-7398-2760'
+    affiliation: Universidad Peruana Unión
 repository-code: https://github.com/Julians30/pig-instance-segmentation-reliability
 keywords:
   - precision livestock farming

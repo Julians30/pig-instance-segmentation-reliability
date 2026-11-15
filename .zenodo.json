@@ -1,0 +1,44 @@
+{
+  "title": "Pig Instance Segmentation Reliability Assessment: code, frozen splits and audit records",
+  "upload_type": "software",
+  "version": "1.0.0",
+  "access_right": "open",
+  "license": "mit",
+  "language": "eng",
+  "description": "Research code and documented experimental artifacts for a date-disjoint, compute-matched evaluation of YOLO11n-seg, YOLO26n-seg and Mask R-CNN ResNet50-FPN for pig instance segmentation on the public FaroPigSeg dataset (three training seeds per model). Includes 37 cleaned Google Colab notebooks (data audit, frozen date-disjoint partition, training, harmonized COCO mask evaluation, counting, calibration, efficiency, equal 60-min NVIDIA L4 training-budget experiments and a single retrospective test evaluation), frozen split manifests with SHA-256 fingerprints, result tables, an independent NumPy compressed-RLE mask-AP verifier and an automated repository audit. FaroPigSeg images and labels are not redistributed (CC BY-NC 4.0; obtain them from the dataset authors). The associated manuscript is not yet accepted or published.",
+  "creators": [
+    {
+      "name": "Coronel-Reyes, Julián",
+      "orcid": "0000-0002-7883-5388",
+      "affiliation": "Universidad Técnica de Machala"
+    },
+    {
+      "name": "Haro-Sarango, Alexander",
+      "orcid": "0000-0001-7398-2760",
+      "affiliation": "Universidad Peruana Unión"
+    }
+  ],
+  "keywords": [
+    "precision livestock farming",
+    "pig instance segmentation",
+    "YOLO11",
+    "YOLO26",
+    "Mask R-CNN",
+    "compute-matched evaluation",
+    "date-disjoint split",
+    "COCO mask AP",
+    "reproducibility"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://doi.org/10.1016/j.eswa.2025.128466",
+      "relation": "references",
+      "resource_type": "publication-article"
+    },
+    {
+      "identifier": "https://github.com/yudong888/FaroPig-Datasets",
+      "relation": "references",
+      "resource_type": "dataset"
+    }
+  ]
+}
