@@ -1,6 +1,7 @@
 # Changelog
 
 ## 2026-11-15
+- Zenodo version 1.0.0 published: DOI 10.5281/zenodo.24252738 (README badge, CITATION.cff and docs/ZENODO_ARCHIVE.md updated).
 - Revised supplement ESM_1.pdf (lead text citing every table and figure; Eq. 1 reference; no numerical changes) and removed the journal name from the README status.
 - Documented the prepared Zenodo source/supplement archive and reserved DOI, explicitly marked as unpublished pending authorization. Clarified the six deposit files and artifacts required for full reproduction.
 - Notebook 54 completed (9/9 runs, each within 0.26–0.59% of the 60-min L4 budget).
