@@ -1,6 +1,6 @@
 # Versioned software and supporting summaries
 
-Prepared 15 November 2026, version 1.0.0. Reserved DOI: **10.5281/zenodo.24252738**. Publication is pending; this reservation is not yet a registered/public DOI.
+Published 15 November 2026, version 1.0.0. DOI: **[10.5281/zenodo.24252738](https://doi.org/10.5281/zenodo.24252738)**.
 
 ## Frozen source
 
@@ -15,7 +15,7 @@ The deposit source archive is the complete tracked snapshot at commit `9e19a5b89
 | README_ZENODO.md | Snapshot guide, access instructions and license scope |
 | SHA256SUMS.txt | Original source-archive, manifest and guide checksums |
 | ESM_1.pdf | Author-provided supplementary summary tables S1–S17 and figures S1–S4, with corrected equation/archive references and bridge-check note |
-| RELEASE_NOTES.md | Final deposit scope and supplementary-PDF checksum |
+| RELEASE_NOTES.md | Final deposit scope, source-archive and supplementary-PDF checksums |
 
 The supplement is a record of reported results, not evidence of new training or inference during packaging. Its SHA-256 is `71ed9b61db51e4ad4df93f3bdc5084cfc02c7ebe812564a884234887591f0e18` (revised 15 November 2026: table/figure lead text, Eq. 1 reference, bridge-check note and archive paragraph; numerical values unchanged). The bridge-check maximum is 0.0001206026; the conservative displayed bound is 0.000121. Those observed discrepancies left the original model order unchanged and do not establish general software-version invariance.
 
