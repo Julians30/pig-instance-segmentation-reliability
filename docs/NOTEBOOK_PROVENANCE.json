@@ -338,5 +338,35 @@
     "code_cells": 10,
     "source_sha256": "930e278fef0199d7684f74637554512c16be7ebc059be2c206c1ac204fd2a321",
     "release_sha256": "f633228c6e4369b23e61151f129b7e80e1121d48d67a0416465ca2672bb3bb94"
+  },
+  {
+    "number": 54,
+    "github_path": "notebooks/07_complementary/54_CERDOS_Presupuesto_Equiparado_L4_GPU.ipynb",
+    "drive_file_id": "1VxuBayLE-37C5MzByd1unm_9g1p561dz",
+    "drive_url": "https://drive.google.com/file/d/1VxuBayLE-37C5MzByd1unm_9g1p561dz/view",
+    "cells": 22,
+    "code_cells": 10,
+    "source_sha256": "d4af63a6f67df15004f49d793504b4f8cbff3022d4693d0341a29d214cda1c47",
+    "release_sha256": "a303096e3679970f517d6959357c15efc84f3f6dd02ccfa26d59bf494e22caf0"
+  },
+  {
+    "number": 55,
+    "github_path": "notebooks/07_complementary/55_CERDOS_MaskRCNN_LR_Coseno_L4_GPU.ipynb",
+    "drive_file_id": "14pDyQFfKB30LQ_Qm-0qOU7Hbs0XK0P7P",
+    "drive_url": "https://drive.google.com/file/d/14pDyQFfKB30LQ_Qm-0qOU7Hbs0XK0P7P/view",
+    "cells": 18,
+    "code_cells": 8,
+    "source_sha256": "d16d263915d0decb2f2ccaba6e4ffdc3e0633d663b93d825abdc3fa9d142ba8e",
+    "release_sha256": "c15f28f5b1ea9ca6fcd8284bb0e4ccf3e3825b8bd62ef47c1483334fb750c290"
+  },
+  {
+    "number": 56,
+    "github_path": "notebooks/07_complementary/56_CERDOS_Evaluacion_Test_Presupuesto_Equiparado_GPU.ipynb",
+    "drive_file_id": "1bKFTDm4Ph0qTnGS9wvqxdNdIt5EpDpC_",
+    "drive_url": "https://drive.google.com/file/d/1bKFTDm4Ph0qTnGS9wvqxdNdIt5EpDpC_/view",
+    "cells": 20,
+    "code_cells": 10,
+    "source_sha256": "52ab5106b3e0140ef797cc86ceb34c0e73790573abb732138aa3ffbb09d23372",
+    "release_sha256": "372dca9168f5acba00973b2bd59a5c3ea0e7ee4c72fe422fe80b518d36e7fd46"
   }
 ]

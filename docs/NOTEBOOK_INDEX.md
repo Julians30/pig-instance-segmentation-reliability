@@ -1,6 +1,6 @@
 # Notebook inventory and recommended ordering
 
-**Public source copies** were reconstructed from the 34 source notebooks in the study's Google Drive project on 20 October 2026. They have the same input cells, explanations and order, but output cells and prior runtime traces were cleared. The original executed notebooks were not modified. These source copies can still contain **legacy author-specific Drive paths**, which must be adapted on another account.
+**Public source copies** were reconstructed from the 34 source notebooks (00–33) in the study's Google Drive project on 20 October 2026. They have the same input cells, explanations and order, but output cells and prior runtime traces were cleared. The original executed notebooks were not modified. These source copies can still contain **legacy author-specific Drive paths**, which must be adapted on another account.
 
 The original-numbered notebooks **00–33** are all accounted for. **25** is represented by the `CORREGIDO` canonical notebook and **26** by its explicitly marked `REVISION` version.
 
@@ -10,6 +10,12 @@ The original-numbered notebooks **00–33** are all accounted for. **25** is rep
 2. **03, 06, 22**: YOLO11, Mask R-CNN and YOLO26 training recipes.
 3. **31, 32**: additional seeds for YOLO11 and Mask R-CNN.
 4. **09, 23, 33**: original COCO harmonization, YOLO26 COCO seeds, and final **nine-run COCO** evaluation.
+
+## Complementary experiments (added 13–15 November 2026)
+
+5. **54**: equal NVIDIA L4 wall-clock training budget for YOLO11n-seg, YOLO26n-seg and Mask R-CNN (seeds 2026–2028). Run the timing pilot and step 5b (pre-caching and Mask R-CNN re-measurement) first, fix `BUDGET_MINUTES_PER_RUN` once, then run one seed per Colab session (version 3 selects the next pending seed automatically). The notebook never evaluates the test set. Status: completed (9/9 runs).
+6. **55**: Mask R-CNN with a time-based cosine learning-rate schedule (1e-4 to 1e-6) under the same 60-min budget and seeds; train/validation only. Status: completed (3/3 runs).
+7. **56**: single retrospective test evaluation of the 12 compute-matched checkpoints with the notebook-33 COCO protocol, plus a bridge check on the original seed-2026 checkpoints. Status: completed.
 
 Notebooks 04–08, 10–21 and 24–30 document the supporting geometry, count, calibration, uncertainty and qualitative interpretability analyses. They should **not** all be rerun before a reader can understand Experiment 33.
 
@@ -51,5 +57,8 @@ Notebooks 04–08, 10–21 and 24–30 document the supporting geometry, count, 
 | [31_CERDOS_Repeticiones_YOLO11n_GPU.ipynb](../notebooks/02_training/31_CERDOS_Repeticiones_YOLO11n_GPU.ipynb) | `02_training` | [Original notebook](https://drive.google.com/file/d/1EaAV0QZntERhxj6AL5_E5QTtvHuYY0TI/view) |
 | [32_CERDOS_Repeticiones_MaskRCNN_GPU.ipynb](../notebooks/02_training/32_CERDOS_Repeticiones_MaskRCNN_GPU.ipynb) | `02_training` | [Original notebook](https://drive.google.com/file/d/19bKRb0C_mwwoWe1qNX_Peo9VXmE_fVK9/view) |
 | [33_CERDOS_Evaluacion_COCO_9_Semillas_GPU.ipynb](../notebooks/03_evaluation/33_CERDOS_Evaluacion_COCO_9_Semillas_GPU.ipynb) | `03_evaluation` | [Original notebook](https://drive.google.com/file/d/1nsEHU57LTLLV3QmkIri31-WDo9AkE0j0/view) |
+| [54_CERDOS_Presupuesto_Equiparado_L4_GPU.ipynb](../notebooks/07_complementary/54_CERDOS_Presupuesto_Equiparado_L4_GPU.ipynb) | `07_complementary` | [Original notebook](https://drive.google.com/file/d/1VxuBayLE-37C5MzByd1unm_9g1p561dz/view) |
+| [55_CERDOS_MaskRCNN_LR_Coseno_L4_GPU.ipynb](../notebooks/07_complementary/55_CERDOS_MaskRCNN_LR_Coseno_L4_GPU.ipynb) | `07_complementary` | [Original notebook](https://drive.google.com/file/d/14pDyQFfKB30LQ_Qm-0qOU7Hbs0XK0P7P/view) |
+| [56_CERDOS_Evaluacion_Test_Presupuesto_Equiparado_GPU.ipynb](../notebooks/07_complementary/56_CERDOS_Evaluacion_Test_Presupuesto_Equiparado_GPU.ipynb) | `07_complementary` | [Original notebook](https://drive.google.com/file/d/1bKFTDm4Ph0qTnGS9wvqxdNdIt5EpDpC_/view) |
 
 Source file IDs and both raw and cleaned-file SHA-256 digests are in [`NOTEBOOK_PROVENANCE.json`](NOTEBOOK_PROVENANCE.json).
